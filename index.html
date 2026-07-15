@@ -85,6 +85,7 @@ main { margin: 0 !important; padding: 0 !important; overflow: visible !important
 <h2 id="page-title" class="text-xl font-bold text-gray-800">ภาพรวมระบบ (Dashboard)</h2>
 <div class="flex gap-4 items-center">
 <button onclick="fetchData()" class="text-red-600 hover:text-red-800"><i class="fa-solid fa-rotate-right"></i> รีเฟรชข้อมูล</button>
+<button onclick="restoreSeedData()" class="text-green-700 hover:text-green-900 text-sm"><i class="fa-solid fa-file-excel"></i> โหลดข้อมูลจาก Excel</button>
 <div id="user-profile" class="hidden flex items-center gap-2 border-l pl-4">
 <div class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center text-red-600"><i class="fa-solid fa-user-nurse"></i></div>
 <div class="flex flex-col">
@@ -168,7 +169,7 @@ main { margin: 0 !important; padding: 0 !important; overflow: visible !important
 <span class="absolute left-3 top-2.5 text-gray-400"><i class="fa-solid fa-magnifying-glass text-sm"></i></span>
 <input type="text" id="search-request" onkeyup="debounceRequestSearch()" placeholder="ค้นหา HN, ชื่อ, หอผู้ป่วย..." class="pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-400 outline-none w-48 sm:w-64">
 </div>
-<button onclick="document.getElementById('modal-request').classList.remove('hidden')" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 shadow-sm text-sm sm:text-base"><i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">เพิ่มรายการจองเลือด</span></button>
+<button onclick="openRequestModal()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 shadow-sm text-sm sm:text-base"><i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">เพิ่มรายการจองเลือด</span></button>
 </div>
 </div>
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -195,7 +196,17 @@ main { margin: 0 !important; padding: 0 !important; overflow: visible !important
 <div class="bg-white rounded-xl shadow-sm overflow-hidden">
 <table class="w-full text-left text-sm">
 <thead class="bg-gray-50">
-<tr><th class="p-3">HN</th><th class="p-3">ชื่อ-สกุล</th><th class="p-3">อายุ/เพศ</th><th class="p-3">Ward</th><th class="p-3">Cell Grouping</th><th class="p-3">Serum Grouping</th><th class="p-3">สรุป Group (Rh)</th><th class="p-3">Antibody/แพ้</th><th class="p-3 text-center">จัดการ</th></tr>
+<tr>
+<th class="p-3"><button type="button" onclick="sortPatients('HN')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-red-700 transition"><span>HN</span><i id="sort-icon-patients-HN" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3"><button type="button" onclick="sortPatients('Name')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-red-700 transition"><span>ชื่อ-สกุล</span><i id="sort-icon-patients-Name" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3"><button type="button" onclick="sortPatients('Age')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-red-700 transition"><span>อายุ/เพศ</span><i id="sort-icon-patients-Age" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3"><button type="button" onclick="sortPatients('Latest')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-red-700 transition"><span>วันที่</span><i id="sort-icon-patients-Latest" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3"><button type="button" onclick="sortPatients('Ward')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-red-700 transition"><span>Ward</span><i id="sort-icon-patients-Ward" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3"><button type="button" onclick="sortPatients('Forward')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-red-700 transition"><span>Cell Grouping</span><i id="sort-icon-patients-Forward" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3"><button type="button" onclick="sortPatients('Reverse')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-red-700 transition"><span>Serum Grouping</span><i id="sort-icon-patients-Reverse" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3"><button type="button" onclick="sortPatients('Group')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-red-700 transition"><span>สรุป Group (Rh)</span><i id="sort-icon-patients-Group" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3"><button type="button" onclick="sortPatients('Antibody')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-red-700 transition"><span>Antibody/แพ้</span><i id="sort-icon-patients-Antibody" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3 text-center">จัดการ</th></tr>
 </thead>
 <tbody class="divide-y" id="table-patients"></tbody>
 </table>
@@ -248,10 +259,25 @@ main { margin: 0 !important; padding: 0 !important; overflow: visible !important
 
 <div class="mt-8 max-w-5xl mx-auto bg-white p-6 rounded-xl shadow-sm border-t-4 border-indigo-500">
 <h3 class="font-bold mb-4 border-b pb-2 text-indigo-800"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติการตรวจความเข้ากันได้ของเลือด (Crossmatch History)</h3>
+<div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+<div class="relative w-full sm:w-80">
+<span class="absolute left-3 top-2.5 text-gray-400"><i class="fa-solid fa-magnifying-glass text-sm"></i></span>
+<input type="text" id="search-crossmatch-history" oninput="filterCrossmatchHistory()" placeholder="ค้นหา HN, ชื่อ, Unit ID, ผลิตภัณฑ์..." class="pl-9 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none w-full shadow-sm">
+</div>
+<p class="text-xs text-gray-500">ค้นหาและเรียงลำดับจากคอลัมน์ที่ต้องการ</p>
+</div>
 <div class="overflow-x-auto">
 <table class="w-full text-left text-sm border-collapse">
 <thead class="bg-gray-50">
-<tr><th class="p-3 border-b">วัน-เวลา</th><th class="p-3 border-b">HN</th><th class="p-3 border-b">ชื่อ-สกุล</th><th class="p-3 border-b">Unit ID</th><th class="p-3 border-b">ผลิตภัณฑ์</th><th class="p-3 border-b">ผลการตรวจ</th><th class="p-3 border-b">ผู้ตรวจ</th><th class="p-3 text-center border-b print-hide">จัดการ</th></tr>
+<tr>
+<th class="p-3 border-b"><button type="button" onclick="sortCrossmatchHistory('Date')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-indigo-700 transition"><span>วัน-เวลา</span><i id="sort-icon-crossmatch-Date" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3 border-b"><button type="button" onclick="sortCrossmatchHistory('HN')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-indigo-700 transition"><span>HN</span><i id="sort-icon-crossmatch-HN" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3 border-b"><button type="button" onclick="sortCrossmatchHistory('Name')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-indigo-700 transition"><span>ชื่อ-สกุล</span><i id="sort-icon-crossmatch-Name" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3 border-b"><button type="button" onclick="sortCrossmatchHistory('UnitID')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-indigo-700 transition"><span>Unit ID</span><i id="sort-icon-crossmatch-UnitID" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3 border-b"><button type="button" onclick="sortCrossmatchHistory('Product')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-indigo-700 transition"><span>ผลิตภัณฑ์</span><i id="sort-icon-crossmatch-Product" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3 border-b"><button type="button" onclick="sortCrossmatchHistory('Result')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-indigo-700 transition"><span>ผลการตรวจ</span><i id="sort-icon-crossmatch-Result" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3 border-b"><button type="button" onclick="sortCrossmatchHistory('Staff')" class="flex items-center gap-1 font-semibold text-gray-700 hover:text-indigo-700 transition"><span>ผู้ตรวจ</span><i id="sort-icon-crossmatch-Staff" class="fa-solid fa-sort text-gray-400 text-xs"></i></button></th>
+<th class="p-3 text-center border-b print-hide">จัดการ</th></tr>
 </thead>
 <tbody class="divide-y" id="table-crossmatch-history">
 <tr><td colspan="8" class="p-4 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
@@ -339,7 +365,11 @@ main { margin: 0 !important; padding: 0 !important; overflow: visible !important
 <form onsubmit="submitTransfusion(event)">
 <div class="mb-5">
 <label class="block text-sm text-gray-600 mb-2 font-bold">ปฏิกิริยาหลังการให้เลือด (Reaction)</label>
-<select id="tf-reaction" class="w-full border rounded-lg p-2 text-red-600 font-medium bg-gray-50 border-gray-300"><option value="None" class="text-green-600">✅ ไม่มีอาการผิดปกติ</option><option value="Fever/Chills">⚠️ ไข้ /หนาวสั่น</option><option value="Allergic">⚠️ ผื่นแพ้ (Allergic)</option><option value="Hemolytic">🚨 Hemolytic Reaction (อันตราย!)</option></select>
+<select id="tf-reaction" onchange="toggleReactionOtherInput()" class="w-full border rounded-lg p-2 text-red-600 font-medium bg-gray-50 border-gray-300"><option value="None" class="text-green-600">✅ ไม่มีอาการผิดปกติ</option><option value="Fever/Chills">⚠️ ไข้ /หนาวสั่น</option><option value="Allergic">⚠️ ผื่นแพ้ (Allergic)</option><option value="Hemolytic">🚨 Hemolytic Reaction (อันตราย!)</option><option value="Other">📝 อื่น ๆ</option></select>
+</div>
+<div id="tf-reaction-other-group" class="hidden mb-5">
+<label class="block text-sm text-gray-600 mb-2 font-bold">ระบุปฏิกิริยาอื่น ๆ / รายละเอียดเพิ่มเติม</label>
+<input type="text" id="tf-reaction-other" placeholder="เช่น อาการชาหรืออาการอื่น ๆ" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-red-400 outline-none">
 </div>
 <div class="flex gap-3">
 <button type="submit" class="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 font-medium shadow-sm"><i class="fa-solid fa-save mr-2"></i> บันทึกเสร็จสิ้น</button>
@@ -369,12 +399,30 @@ main { margin: 0 !important; padding: 0 !important; overflow: visible !important
 <button onclick="window.print()" class="bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-900 shadow-sm flex items-center gap-2"><i class="fa-solid fa-print"></i> พิมพ์รายงาน</button>
 </div>
 <div class="hidden print:block text-center mb-8">
-<h2 class="text-2xl font-bold">รายงานสรุปสถิติธนาคารเลือด</h2><p class="text-gray-500">โรงพยาบาลชุมชน | พิมพ์เมื่อ: <span id="report-print-date"></span></p>
+<h2 class="text-2xl font-bold">รายงานสรุปสถิติธนาคารเลือด</h2><p class="text-gray-500">โรงพยาบาลชุมชน | ช่วงข้อมูล: <span id="report-print-month">ทั้งหมด</span> | พิมพ์เมื่อ: <span id="report-print-date"></span></p>
+</div>
+<div class="bg-white rounded-xl shadow-sm p-4 mb-6 print-hide border border-gray-100">
+<div class="flex flex-col md:flex-row md:items-end gap-3">
+<div>
+<label class="block text-sm font-bold text-gray-700 mb-1">เลือกเดือนรายงาน</label>
+<input type="month" id="report-month" onchange="renderReport()" class="border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-400 outline-none">
+</div>
+<button type="button" onclick="clearReportMonth()" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 font-medium text-sm border border-gray-200"><i class="fa-solid fa-rotate-left mr-1"></i> แสดงทั้งหมด</button>
+<div class="text-sm text-gray-600 md:ml-auto">กำลังแสดง: <span id="report-month-text" class="font-bold text-indigo-700">ทั้งหมด</span></div>
+</div>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6" id="report-summary-cards"></div>
+<div class="bg-white rounded-xl shadow-sm overflow-hidden p-6 border-t-4 border-sky-500 mb-6">
+<h4 class="font-bold text-sky-800 mb-4 border-b pb-2"><i class="fa-solid fa-stopwatch mr-2"></i> สรุป Turnaround Time (TAT)</h4>
+<div id="report-turnaround" class="overflow-x-auto"></div>
+</div>
 <div class="bg-white rounded-xl shadow-sm overflow-hidden p-6 border-t-4 border-indigo-500 mb-6">
 <h4 class="font-bold text-indigo-800 mb-4 border-b pb-2"><i class="fa-solid fa-list-check mr-2"></i> รายละเอียดคลังเลือดแยกตามหมู่เลือด (Blood Group Breakdown)</h4>
 <div id="report-details" class="overflow-x-auto"></div>
+</div>
+<div class="bg-white rounded-xl shadow-sm overflow-hidden p-6 border-t-4 border-amber-500 mb-6">
+<h4 class="font-bold text-amber-800 mb-4 border-b pb-2"><i class="fa-solid fa-note-sticky mr-2"></i> สรุปหมายเหตุจากคลังเลือด (Inventory Remarks)</h4>
+<div id="report-remarks" class="overflow-x-auto"></div>
 </div>
 <div class="bg-white rounded-xl shadow-sm overflow-hidden p-6 border-t-4 border-rose-500">
 <h4 class="font-bold text-rose-800 mb-4 border-b pb-2"><i class="fa-solid fa-heart-pulse mr-2"></i> รายงานสถิติปฏิกิริยาไม่พึงประสงค์จากการให้เลือด (Transfusion Reactions)</h4>
@@ -410,7 +458,7 @@ main { margin: 0 !important; padding: 0 !important; overflow: visible !important
 </div>
 
 <div id="modal-request-details" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[150]">
-<div class="bg-white p-6 rounded-xl w-[500px] shadow-xl">
+<div class="bg-white p-6 rounded-xl w-[500px] shadow-xl max-h-[90vh] overflow-y-auto">
 <div class="flex justify-between items-center mb-4 border-b pb-2"><h3 class="font-bold text-lg text-rose-700"><i class="fa-solid fa-circle-info"></i> รายละเอียดการขอเลือด</h3><button type="button" onclick="document.getElementById('modal-request-details').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button></div>
 <div id="request-details-content" class="space-y-3 text-sm"></div>
 <div class="mt-5 flex justify-end"><button type="button" onclick="document.getElementById('modal-request-details').classList.add('hidden')" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 font-medium shadow-sm">ปิดหน้าต่าง</button></div>
@@ -441,9 +489,59 @@ main { margin: 0 !important; padding: 0 !important; overflow: visible !important
 <div><label class="block text-xs text-gray-500 mb-1">จำนวน (ยูนิต)</label><input type="number" id="req-qty" placeholder="จำนวน" min="1" required class="w-full border rounded p-2 focus:ring-2 focus:ring-red-400 outline-none"></div>
 <div class="col-span-2"><label class="block text-xs text-gray-500 mb-1">ความเร่งด่วน</label><select id="req-urgency" class="w-full border rounded p-2 font-medium focus:ring-2 focus:ring-red-400 outline-none" required><option value="ปกติ" class="text-gray-700">ปกติ (Routine)</option><option value="ด่วน" class="text-orange-600">ด่วน (Urgent)</option><option value="ด่วนมาก" class="text-red-600 font-bold">ด่วนมาก (Stat/Emergency)</option></select></div>
 </div>
+<div id="req-allergy-warning" class="hidden mb-3 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+<div class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> พบประวัติแพ้เลือด</div>
+<div id="req-allergy-warning-text" class="leading-relaxed"></div>
+</div>
+<div class="mb-3"><label class="block text-xs text-gray-500 mb-1">ประวัติแพ้เลือด (ถ้ามี)</label><textarea id="req-allergy" rows="2" oninput="updateRequestAllergyPanel(this.value)" placeholder="ระบุประวัติแพ้เลือดหรือปฏิกิริยาการให้เลือดเดิม" class="w-full border rounded p-2 focus:ring-2 focus:ring-red-400 outline-none"></textarea></div>
 <div class="mb-5"><label class="block text-xs text-gray-500 mb-1">สถานะของการจองเลือด</label><input type="text" id="req-status" value="รอรับแลป" readonly class="w-full border rounded p-2 font-bold bg-gray-100 text-gray-500 outline-none cursor-not-allowed"></div>
 <div class="flex justify-end gap-2"><button type="button" onclick="document.getElementById('modal-request').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">ยกเลิก</button><button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">บันทึกข้อมูล</button></div>
 </form>
+</div>
+</div>
+
+<div id="modal-edit-request" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[150]">
+<div class="bg-white p-6 rounded-xl w-[520px] shadow-xl max-h-[90vh] overflow-y-auto">
+<div class="flex justify-between items-center mb-4 border-b pb-2"><h3 class="font-bold text-lg text-rose-700"><i class="fa-solid fa-pen-to-square"></i> แก้ไขรายการจองเลือด</h3><button type="button" onclick="document.getElementById('modal-edit-request').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button></div>
+<form onsubmit="submitEditRequest(event)">
+<input type="hidden" id="edit-r-index">
+<div class="mb-3"><label class="block text-xs text-gray-500 mb-1">HN</label><input type="text" id="edit-r-hn" required class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"></div>
+<div class="grid grid-cols-12 gap-2 mb-3">
+<div class="col-span-4 sm:col-span-3"><label class="block text-xs text-gray-500 mb-1">คำนำ</label><select id="edit-r-title" required class="w-full border rounded p-2 px-1 focus:ring-2 focus:ring-rose-400 outline-none text-sm sm:text-base"><option value="">คำนำ</option><option>นาย</option><option>นาง</option><option>นางสาว</option><option>ด.ช.</option><option>ด.ญ.</option></select></div>
+<div class="col-span-4 sm:col-span-4"><label class="block text-xs text-gray-500 mb-1">ชื่อ</label><input type="text" id="edit-r-fname" required class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"></div>
+<div class="col-span-4 sm:col-span-5"><label class="block text-xs text-gray-500 mb-1">นามสกุล</label><input type="text" id="edit-r-lname" required class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"></div>
+</div>
+<div class="grid grid-cols-3 gap-2 mb-3">
+<div><label class="block text-xs text-gray-500 mb-1">อายุ</label><input type="number" id="edit-r-age" required class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"></div>
+<div><label class="block text-xs text-gray-500 mb-1">เพศ</label><select id="edit-r-gender" required class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"><option value="">เพศ</option><option>ชาย</option><option>หญิง</option></select></div>
+<div><label class="block text-xs text-gray-500 mb-1">Ward</label><div class="flex flex-col gap-1 w-full"><select id="edit-r-ward-select" onchange="toggleWardInput('edit-r-ward', this.value)" required class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"><option value="">หอผู้ป่วย</option><option value="ER">ER</option><option value="IPD1">IPD1</option><option value="IPD2">IPD2</option><option value="OR/LR">OR/LR</option><option value="OPD">OPD</option><option value="Other">อื่นๆ (ระบุ)</option></select><input type="text" id="edit-r-ward" placeholder="ระบุหอผู้ป่วย" class="hidden w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"></div></div>
+</div>
+<div class="grid grid-cols-2 gap-2 mb-3">
+<div><label class="block text-xs text-gray-500 mb-1">โรค (Diagnosis)</label><input type="text" id="edit-r-disease" required class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"></div>
+<div><label class="block text-xs text-gray-500 mb-1">หมู่เลือด</label><input type="text" id="edit-r-blood-group" class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none text-red-600 font-bold"></div>
+</div>
+<div class="mb-3"><label class="block text-xs text-gray-500 mb-1">ประวัติแพ้เลือด (ถ้ามี)</label><textarea id="edit-r-allergy" rows="2" class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"></textarea></div>
+<div class="grid grid-cols-2 gap-3 mb-3">
+<div><label class="block text-xs text-gray-500 mb-1">ผลิตภัณฑ์ที่จอง</label><select id="edit-r-product" required class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"><option>PRC</option><option>LPRC</option><option>IPRC</option><option>WPRC</option><option>FFP</option><option>Platelet</option><option>Platelet Apheresis</option><option>Cryoprecipitate</option><option>GC</option><option>Whole Blood</option></select></div>
+<div><label class="block text-xs text-gray-500 mb-1">จำนวน (ยูนิต)</label><input type="number" id="edit-r-qty" min="1" required class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"></div>
+<div><label class="block text-xs text-gray-500 mb-1">ความเร่งด่วน</label><select id="edit-r-urgency" required class="w-full border rounded p-2 font-medium focus:ring-2 focus:ring-rose-400 outline-none"><option value="ปกติ">ปกติ (Routine)</option><option value="ด่วน">ด่วน (Urgent)</option><option value="ด่วนมาก">ด่วนมาก (Stat/Emergency)</option></select></div>
+<div><label class="block text-xs text-gray-500 mb-1">สถานะการจอง</label><input type="text" id="edit-r-status" readonly class="w-full border rounded p-2 font-medium bg-gray-100 text-gray-500 outline-none cursor-not-allowed"></div>
+</div>
+<div class="mb-4"><label class="block text-xs text-gray-500 mb-1">วันที่ขอ</label><input type="datetime-local" id="edit-r-date" class="w-full border rounded p-2 focus:ring-2 focus:ring-rose-400 outline-none"></div>
+<div class="flex justify-end gap-2 border-t pt-4"><button type="button" onclick="document.getElementById('modal-edit-request').classList.add('hidden')" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">ยกเลิก</button><button type="submit" class="px-4 py-2 bg-rose-600 text-white rounded hover:bg-rose-700 font-medium">บันทึกการแก้ไข</button></div>
+</form>
+</div>
+</div>
+
+<div id="modal-blood-allergy-warning" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[220]">
+<div class="bg-white p-6 rounded-2xl w-[420px] max-w-[92%] shadow-2xl border-t-4 border-red-600">
+<div class="text-center mb-4">
+<div class="text-red-600 text-5xl mb-3"><i class="fa-solid fa-triangle-exclamation"></i></div>
+<h3 class="font-bold text-xl text-red-700">แจ้งเตือนประวัติแพ้เลือด</h3>
+<p class="text-sm text-gray-600 mt-1">ตรวจสอบข้อมูลก่อนดำเนินการจองเลือด</p>
+</div>
+<div id="blood-allergy-warning-content" class="rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-gray-800 mb-5"></div>
+<button type="button" onclick="closeBloodAllergyPopup()" class="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 font-bold shadow-sm">รับทราบ</button>
 </div>
 </div>
 
@@ -665,14 +763,23 @@ main { margin: 0 !important; padding: 0 !important; overflow: visible !important
 <div class="loader mb-4 border-red-500"></div><p class="text-gray-600 font-medium">กำลังประมวลผล...</p>
 </div>
 
+<script src="blood_bank_seed.js"></script>
 <script>
 const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyGy6g62QkufeoZTTm2j9UHmrKFq09o1J6zibleqByDVaHsKrDN5Q0sFqgCCgv6tyk/exec"; 
 let db = { Patients: [], BloodInventory: [], BloodReceiving: [], Alerts: [], BloodRequests: [], Crossmatch: [], BedsideTest: [], BloodDispense: [], Transfusion: [], AI_Summary: [] };
+let lastLocalSaveAt = 0;
 
 function normalizeDB() {
 const tables = ['Patients', 'BloodInventory', 'BloodReceiving', 'Alerts', 'BloodRequests', 'Crossmatch', 'BedsideTest', 'BloodDispense', 'Transfusion', 'AI_Summary'];
 tables.forEach(t => { if (!Array.isArray(db[t])) db[t] = []; });
-db.BloodRequests.forEach(r => { if (!r.Qty && r.Product) { const m = String(r.Product).match(/\((\d+)\s*ยูนิต\)/); if (m) r.Qty = m[1]; } if (r.Gender === 'undefined') r.Gender = ''; if ((!r.Ward || r.Ward === 'undefined') && db.Patients) { const p = db.Patients.find(x => x.HN == r.HN); if (p && p.Ward && p.Ward !== 'undefined') r.Ward = p.Ward; } });
+db.BloodRequests.forEach(r => {
+if (!r.Qty && r.Product) { const m = String(r.Product).match(/\((\d+)\s*ยูนิต\)/); if (m) r.Qty = m[1]; }
+if (r.Gender === 'undefined') r.Gender = '';
+const p = db.Patients ? db.Patients.find(x => x.HN == r.HN) : null;
+if ((!r.Ward || r.Ward === 'undefined') && p && p.Ward && p.Ward !== 'undefined') r.Ward = p.Ward;
+if (isBlankClinicalText(r.AllergyHistory) && p && hasBloodAllergyText(p.AllergyHistory)) r.AllergyHistory = p.AllergyHistory;
+if ((!r.Ward || r.Ward === 'undefined') && db.BloodDispense) { const d = [...db.BloodDispense].reverse().find(x => x.HN == r.HN && x.Ward && x.Ward !== 'undefined'); if (d) r.Ward = d.Ward; }
+});
 db.BedsideTest.forEach(b => { if (!b.Staff && (b.Staff1 || b.Staff2)) b.Staff = b.Staff1 || b.Staff2; if (!b.AntiD) b.AntiD = ''; if (!b.Summary) b.Summary = ''; });
 db.Crossmatch.forEach(cm => { const blood = db.BloodInventory.find(b => b.UnitID == cm.UnitID); if (blood) { if (!cm.Product) cm.Product = blood.Product || ''; if (!cm.Source) cm.Source = blood.Source || ''; } });
 db.BloodInventory.forEach(b => { if (!b.Product) b.Product = ''; if (!b.Remark) b.Remark = '-'; });
@@ -705,17 +812,128 @@ else { selectEl.value = ''; inputEl.value = ''; toggleWardInput(inputId, ''); }
 function getRequestWard(request) {
 if(request && request.Ward && request.Ward !== 'undefined') return request.Ward;
 const patient = request && db.Patients ? db.Patients.find(p => p.HN == request.HN) : null;
-return patient && patient.Ward && patient.Ward !== 'undefined' ? patient.Ward : '';
+if(patient && patient.Ward && patient.Ward !== 'undefined') return patient.Ward;
+const dispense = request && db.BloodDispense ? [...db.BloodDispense].reverse().find(d => d.HN == request.HN && d.Ward && d.Ward !== 'undefined') : null;
+return dispense ? dispense.Ward : '';
+}
+
+function getRequestBloodGroup(request) {
+if(request && request.BloodGroup && request.BloodGroup !== 'undefined' && request.BloodGroup !== '-') return request.BloodGroup;
+const patient = request && db.Patients ? db.Patients.find(p => p.HN == request.HN) : null;
+if(patient && patient.BloodGroup_ABO && patient.BloodGroup_ABO !== '-') return `${patient.BloodGroup_ABO || ''} ${patient.Rh || ''}`.trim();
+return '';
+}
+
+function escapeHTML(value) {
+return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
+
+function isBlankClinicalText(value) {
+const text = String(value ?? '').trim();
+return !text || ['-', 'undefined', 'null'].includes(text.toLowerCase());
+}
+
+function hasBloodAllergyText(value) {
+const text = String(value ?? '').trim();
+if (isBlankClinicalText(text)) return false;
+return !['ไม่มี', 'ไม่มีประวัติ', 'none', 'no', 'n/a', 'na'].includes(text.toLowerCase());
+}
+
+function getTransfusionReactionHistory(hn) {
+if(!hn || !db.Transfusion) return '';
+const latestByUnit = {};
+db.Transfusion.forEach((t, index) => {
+if(t.HN != hn || !t.UnitID) return;
+const ts = new Date(t.StartTime || t.EndTime || 0).getTime();
+const score = Number.isFinite(ts) ? ts : index;
+const prev = latestByUnit[t.UnitID];
+if(!prev || score >= prev.score) latestByUnit[t.UnitID] = { record: t, score };
+});
+return Object.values(latestByUnit).map(item => item.record).filter(t => hasBloodAllergyText(t.Reaction)).map(t => {
+const date = t.StartTime ? ` (${new Date(t.StartTime).toLocaleDateString('th-TH')})` : '';
+return `${t.Reaction}${date}`;
+}).join('; ');
+}
+
+function getBloodAllergyHistoryByHN(hn) {
+const patient = hn && db.Patients ? db.Patients.find(p => p.HN == hn) : null;
+if(patient && hasBloodAllergyText(patient.AllergyHistory)) return patient.AllergyHistory;
+return getTransfusionReactionHistory(hn);
+}
+
+function getRequestAllergyHistory(request) {
+if(request && hasBloodAllergyText(request.AllergyHistory)) return request.AllergyHistory;
+return request ? getBloodAllergyHistoryByHN(request.HN) : '';
+}
+
+function getAllergyBadgeHTML(allergy) {
+if(!hasBloodAllergyText(allergy)) return '';
+return `<div class="mt-1 text-xs font-bold text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> แพ้เลือด: ${escapeHTML(allergy)}</div>`;
+}
+
+let lastBloodAllergyAlertKey = '';
+
+function openRequestModal() {
+lastBloodAllergyAlertKey = '';
+document.getElementById('modal-request').classList.remove('hidden');
+updateRequestAllergyPanel(document.getElementById('req-allergy') ? document.getElementById('req-allergy').value : '');
+}
+
+function updateRequestAllergyPanel(allergy) {
+const panel = document.getElementById('req-allergy-warning'); const textEl = document.getElementById('req-allergy-warning-text');
+if(!panel || !textEl) return;
+if(hasBloodAllergyText(allergy)) { textEl.textContent = allergy; panel.classList.remove('hidden'); }
+else { textEl.textContent = ''; panel.classList.add('hidden'); }
+}
+
+function closeBloodAllergyPopup() {
+document.getElementById('modal-blood-allergy-warning').classList.add('hidden');
+}
+
+function showBloodAllergyPopup(record, allergy) {
+const content = document.getElementById('blood-allergy-warning-content');
+if(!content) return;
+content.innerHTML = `<div class="space-y-2"><div><span class="font-semibold text-gray-500">HN:</span> <span class="font-bold text-red-700">${escapeHTML(record && record.HN ? record.HN : '-')}</span></div><div><span class="font-semibold text-gray-500">ชื่อ-สกุล:</span> ${escapeHTML(record && record.Name ? record.Name : '-')}</div><div class="pt-2 border-t border-red-200"><div class="font-bold text-red-700 mb-1">ประวัติแพ้เลือด</div><div>${escapeHTML(allergy)}</div></div></div>`;
+document.getElementById('modal-blood-allergy-warning').classList.remove('hidden');
+}
+
+function maybeShowBloodAllergyPopup(record, allergy) {
+if(!hasBloodAllergyText(allergy)) return;
+const key = `${record && record.HN ? record.HN : ''}|${allergy}`;
+if(lastBloodAllergyAlertKey === key) return;
+lastBloodAllergyAlertKey = key;
+showBloodAllergyPopup(record, allergy);
+}
+
+function hasAnyData(dataObj) {
+return !!dataObj && Object.values(dataObj).some(value => Array.isArray(value) && value.length > 0);
+}
+
+function loadSeedData() {
+if (!window.BLOOD_BANK_SEED_DATA || !hasAnyData(window.BLOOD_BANK_SEED_DATA)) return false;
+db = JSON.parse(JSON.stringify(window.BLOOD_BANK_SEED_DATA));
+normalizeDB();
+localStorage.setItem('bloodBankDB', JSON.stringify(db));
+refreshActiveViews();
+return true;
+}
+
+function restoreSeedData() {
+if (!window.BLOOD_BANK_SEED_DATA || !hasAnyData(window.BLOOD_BANK_SEED_DATA)) return showToast("ไม่พบข้อมูลจาก Excel", "danger");
+if (!confirm("โหลดข้อมูลจาก Excel จะเขียนทับข้อมูลที่อยู่ใน Browser ตอนนี้ ต้องการดำเนินการต่อหรือไม่?")) return;
+loadSeedData();
+showToast("โหลดข้อมูลจาก Excel สำเร็จ", "success");
 }
 
 function saveDB() {
 normalizeDB();
-setTimeout(() => {
+lastLocalSaveAt = Date.now();
 localStorage.setItem('bloodBankDB', JSON.stringify(db));
 if (GOOGLE_APP_SCRIPT_URL && GOOGLE_APP_SCRIPT_URL.trim() !== "") {
+setTimeout(() => {
 fetch(GOOGLE_APP_SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: "syncFullDatabase", data: db }) }).catch(e => console.warn("Google Sheets save background task failed:", e.message));
-}
 }, 10);
+}
 }
 
 const pages = ['dashboard', 'requests', 'patients', 'inventory', 'transfusion-flow', 'report'];
@@ -740,12 +958,15 @@ if(page === 'report') renderReport();
 
 async function fetchData() {
 const localData = localStorage.getItem('bloodBankDB');
-if (localData) { db = JSON.parse(localData); normalizeDB(); localStorage.setItem('bloodBankDB', JSON.stringify(db)); refreshActiveViews(); } else { showLoading(true); }
+if (localData) {
+try { db = JSON.parse(localData); if(!hasAnyData(db) && loadSeedData()) { showLoading(false); } else { normalizeDB(); localStorage.setItem('bloodBankDB', JSON.stringify(db)); refreshActiveViews(); } }
+catch (e) { localStorage.removeItem('bloodBankDB'); if(!loadSeedData()) showLoading(true); }
+} else if (!loadSeedData()) { showLoading(true); }
 try {
 if (GOOGLE_APP_SCRIPT_URL && GOOGLE_APP_SCRIPT_URL.trim() !== "") {
 fetch(GOOGLE_APP_SCRIPT_URL + "?action=getData", { method: 'GET', redirect: 'follow' }).then(response => { if (response.ok) return response.text(); throw new Error("HTTP Error"); }).then(responseText => {
 const jsonResponse = JSON.parse(responseText);
-if(jsonResponse.status === "success" && jsonResponse.data) { db = jsonResponse.data; normalizeDB(); localStorage.setItem('bloodBankDB', JSON.stringify(db)); refreshActiveViews(); }
+if(jsonResponse.status === "success" && hasAnyData(jsonResponse.data)) { db = jsonResponse.data; normalizeDB(); localStorage.setItem('bloodBankDB', JSON.stringify(db)); refreshActiveViews(); }
 }).catch(e => console.warn("Background fetch failed:", e.message)).finally(() => showLoading(false));
 } else { showLoading(false); }
 } catch(e) { showLoading(false); }
@@ -754,8 +975,9 @@ if(jsonResponse.status === "success" && jsonResponse.data) { db = jsonResponse.d
 function fetchDataSilent() {
 if (GOOGLE_APP_SCRIPT_URL && GOOGLE_APP_SCRIPT_URL.trim() !== "") {
 fetch(GOOGLE_APP_SCRIPT_URL + "?action=getData", { method: 'GET', redirect: 'follow' }).then(response => { if (response.ok) return response.text(); throw new Error("HTTP Error"); }).then(responseText => {
+if (Date.now() - lastLocalSaveAt < 30000) return;
 const jsonResponse = JSON.parse(responseText);
-if(jsonResponse.status === "success" && jsonResponse.data) {
+if(jsonResponse.status === "success" && hasAnyData(jsonResponse.data)) {
 const newDataString = JSON.stringify(jsonResponse.data); const oldDataString = localStorage.getItem('bloodBankDB');
 if (newDataString !== oldDataString) { db = jsonResponse.data; normalizeDB(); localStorage.setItem('bloodBankDB', JSON.stringify(db)); refreshActiveViews(); }
 }
@@ -820,7 +1042,7 @@ const searchTerm = document.getElementById('search-dash-request') ? document.get
 let requestHtml = '';
 if(db.BloodRequests && db.BloodRequests.length > 0) {
 let filteredRequests = [...db.BloodRequests].reverse();
-if (searchTerm) { filteredRequests = filteredRequests.filter(r => { const ward = getRequestWard(r); return (r.HN && String(r.HN).toLowerCase().includes(searchTerm)) || (r.Name && String(r.Name).toLowerCase().includes(searchTerm)) || (ward && String(ward).toLowerCase().includes(searchTerm)); }); }
+if (searchTerm) { filteredRequests = filteredRequests.filter(r => { const ward = getRequestWard(r); const allergy = getRequestAllergyHistory(r); return (r.HN && String(r.HN).toLowerCase().includes(searchTerm)) || (r.Name && String(r.Name).toLowerCase().includes(searchTerm)) || (ward && String(ward).toLowerCase().includes(searchTerm)) || (allergy && String(allergy).toLowerCase().includes(searchTerm)); }); }
 filteredRequests = filteredRequests.slice(0, 10);
 if (filteredRequests.length > 0) {
 requestHtml = filteredRequests.map(r => {
@@ -830,10 +1052,10 @@ let urgClass = "bg-gray-100 text-gray-700";
 if(r.Urgency === 'ด่วน') urgClass = "bg-orange-100 text-orange-700"; if(r.Urgency === 'ด่วนมาก') urgClass = "bg-red-100 text-red-700 font-bold";
 let reqDate = r.Date ? new Date(r.Date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-';
 const originalIndex = db.BloodRequests.indexOf(r);
-let displayBloodGroup = r.BloodGroup || '-';
-if (db.Patients) { const p = db.Patients.find(x => x.HN == r.HN); if (p && p.BloodGroup_ABO && p.BloodGroup_ABO !== '-') { displayBloodGroup = `${p.BloodGroup_ABO} ${p.Rh || ''}`.trim(); } }
+let displayBloodGroup = getRequestBloodGroup(r) || '-';
 const displayWard = getRequestWard(r) || '-';
-return `<tr class="cursor-pointer hover:bg-rose-50 transition" onclick="viewRequestDetails(${originalIndex})"><td class="p-3 font-medium text-gray-800">${r.HN || '-'}</td><td class="p-3">${r.Name || '-'}</td><td class="p-3 text-gray-500">${displayWard}</td><td class="p-3 font-bold text-red-600">${displayBloodGroup}</td><td class="p-3 text-gray-500">${reqDate}</td><td class="p-3 font-medium">${r.Product || '-'}</td><td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${urgClass}">${r.Urgency || '-'}</span></td><td class="p-3"><span class="px-2 py-1 rounded text-xs border font-medium ${statusColor}">${r.Status || '-'}</span></td></tr>`;
+const allergyBadge = getAllergyBadgeHTML(getRequestAllergyHistory(r));
+return `<tr class="cursor-pointer hover:bg-rose-50 transition" onclick="viewRequestDetails(${originalIndex})"><td class="p-3 font-medium text-gray-800">${r.HN || '-'}</td><td class="p-3">${r.Name || '-'}${allergyBadge}</td><td class="p-3 text-gray-500">${displayWard}</td><td class="p-3 font-bold text-red-600">${displayBloodGroup}</td><td class="p-3 text-gray-500">${reqDate}</td><td class="p-3 font-medium">${r.Product || '-'}</td><td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${urgClass}">${r.Urgency || '-'}</span></td><td class="p-3"><span class="px-2 py-1 rounded text-xs border font-medium ${statusColor}">${r.Status || '-'}</span></td></tr>`;
 }).join('');
 } else { requestHtml = '<tr><td colspan="8" class="p-4 text-center text-gray-500">ไม่พบข้อมูลที่ค้นหา</td></tr>'; }
 } else { requestHtml = '<tr><td colspan="8" class="p-4 text-center text-gray-500">ไม่มีรายการขอเลือดในขณะนี้</td></tr>'; }
@@ -847,10 +1069,11 @@ let statusColor = "text-gray-600";
 if(r.Status === 'จ่ายแล้ว') statusColor = "text-green-600"; if(r.Status === 'รอตรวจความเข้ากันได้') statusColor = "text-purple-600"; if(r.Status === 'กำลังไปรับเลือดจากโรงพยาบาลแม่ข่าย') statusColor = "text-cyan-600"; if(r.Status === 'ไม่มีเลือดตามญาติ' || r.Status === 'ไม่มีเลือด ตามญาติตรงgroup') statusColor = "text-red-600"; if(r.Status === 'แพทย์ยกเลิก') statusColor = "text-gray-600";
 let urgColor = "text-gray-800"; if(r.Urgency === 'ด่วน') urgColor = "text-orange-600"; if(r.Urgency === 'ด่วนมาก') urgColor = "text-red-600";
 let reqDate = r.Date ? new Date(r.Date).toLocaleString('th-TH') : '-';
-let displayBloodGroup = r.BloodGroup || '-';
-if (db.Patients) { const p = db.Patients.find(x => x.HN == r.HN); if (p && p.BloodGroup_ABO && p.BloodGroup_ABO !== '-') { displayBloodGroup = `${p.BloodGroup_ABO} ${p.Rh || ''}`.trim(); } }
-const displayWard = getRequestWard(r) || '-';
-content.innerHTML = `<div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">HN:</div><div class="col-span-3 font-bold text-red-700 text-base">${r.HN || '-'}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">ชื่อ-สกุล:</div><div class="col-span-3 text-base">${r.Name || '-'} <span class="text-gray-500 text-sm">(อายุ ${r.Age || '-'} ปี)</span></div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">หอผู้ป่วย:</div><div class="col-span-3">${displayWard}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">หมู่เลือด:</div><div class="col-span-3 font-bold text-red-600">${displayBloodGroup}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">โรค (Dx):</div><div class="col-span-3">${r.Disease || '-'}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">ผลิตภัณฑ์:</div><div class="col-span-3 font-bold text-rose-600">${r.Product || '-'}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">ความเร่งด่วน:</div><div class="col-span-3 font-bold ${urgColor}">${r.Urgency || '-'}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2 bg-gray-50 p-2 rounded"><div class="text-gray-500 font-semibold col-span-1">สถานะ:</div><div class="col-span-3 font-bold ${statusColor}">${r.Status || '-'}</div></div><div class="grid grid-cols-4 gap-2 pt-1"><div class="text-gray-500 font-semibold col-span-1">เวลาที่ขอ:</div><div class="col-span-3 text-gray-500">${reqDate}</div></div>`;
+let displayBloodGroup = getRequestBloodGroup(r) || '-';
+const displayWard = getRequestWard(r) || '-'; 
+const allergyHistory = getRequestAllergyHistory(r);
+const allergyDetail = hasBloodAllergyText(allergyHistory) ? `<div class="grid grid-cols-4 gap-2 border-b pb-2 bg-red-50 p-2 rounded border border-red-200"><div class="text-red-700 font-bold col-span-1">แพ้เลือด:</div><div class="col-span-3 font-bold text-red-700">${escapeHTML(allergyHistory)}</div></div>` : '';
+content.innerHTML = `<div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">HN:</div><div class="col-span-3 font-bold text-red-700 text-base">${r.HN || '-'}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">ชื่อ-สกุล:</div><div class="col-span-3 text-base">${r.Name || '-'} <span class="text-gray-500 text-sm">(อายุ ${r.Age || '-'} ปี)</span></div></div>${allergyDetail}<div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">หอผู้ป่วย:</div><div class="col-span-3">${displayWard}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">หมู่เลือด:</div><div class="col-span-3 font-bold text-red-600">${displayBloodGroup}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">โรค (Dx):</div><div class="col-span-3">${r.Disease || '-'}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">ผลิตภัณฑ์:</div><div class="col-span-3 font-bold text-rose-600">${r.Product || '-'}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2"><div class="text-gray-500 font-semibold col-span-1">ความเร่งด่วน:</div><div class="col-span-3 font-bold ${urgColor}">${r.Urgency || '-'}</div></div><div class="grid grid-cols-4 gap-2 border-b pb-2 bg-gray-50 p-2 rounded"><div class="text-gray-500 font-semibold col-span-1">สถานะ:</div><div class="col-span-3 font-bold ${statusColor}">${r.Status || '-'}</div></div><div class="grid grid-cols-4 gap-2 pt-1"><div class="text-gray-500 font-semibold col-span-1">เวลาที่ขอ:</div><div class="col-span-3 text-gray-500">${reqDate}</div></div>`;
 document.getElementById('modal-request-details').classList.remove('hidden');
 }
 
@@ -860,7 +1083,7 @@ function renderRequests(searchTerm = "") {
 if(!document.getElementById('page-requests').classList.contains('active')) return;
 const allRequests = db.BloodRequests || []; const tbody = document.getElementById('table-requests');
 let filteredRequests = allRequests;
-if(searchTerm.trim() !== "") { const term = String(searchTerm).toLowerCase(); filteredRequests = allRequests.filter(r => { const ward = getRequestWard(r); return (r.HN && String(r.HN).toLowerCase().includes(term)) || (r.Name && String(r.Name).toLowerCase().includes(term)) || (ward && String(ward).toLowerCase().includes(term)); }); }
+if(searchTerm.trim() !== "") { const term = String(searchTerm).toLowerCase(); filteredRequests = allRequests.filter(r => { const ward = getRequestWard(r); const allergy = getRequestAllergyHistory(r); return (r.HN && String(r.HN).toLowerCase().includes(term)) || (r.Name && String(r.Name).toLowerCase().includes(term)) || (ward && String(ward).toLowerCase().includes(term)) || (allergy && String(allergy).toLowerCase().includes(term)); }); }
 if(filteredRequests.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-500">ยังไม่มีข้อมูลการจองเลือด หรือไม่พบข้อมูลที่ค้นหา</td></tr>'; return; }
 tbody.innerHTML = filteredRequests.map(r => {
 let urgClass = "bg-gray-100 text-gray-700"; if(r.Urgency === 'ด่วน') urgClass = "bg-orange-100 text-orange-700"; if(r.Urgency === 'ด่วนมาก') urgClass = "bg-red-100 text-red-700 font-bold";
@@ -868,11 +1091,35 @@ let statusClass = "border-gray-200 bg-gray-50";
 if(r.Status === 'รอรับแลป') statusClass = "border-gray-300 bg-gray-100 text-gray-800"; if(r.Status === 'รอตรวจสอบจากคลังเลือด') statusClass = "border-yellow-300 bg-yellow-50 text-yellow-800"; if(r.Status === 'ไม่มีเลือดตามญาติ' || r.Status === 'ไม่มีเลือด ตามญาติตรงgroup') statusClass = "border-red-300 bg-red-50 text-red-800"; if(r.Status === 'รอไปรับเลือด') statusClass = "border-orange-300 bg-orange-50 text-orange-800"; if(r.Status === 'รอตรวจความเข้ากันได้') statusClass = "border-purple-300 bg-purple-50 text-purple-800"; if(r.Status === 'กำลังไปรับเลือดจากโรงพยาบาลแม่ข่าย') statusClass = "border-cyan-300 bg-cyan-50 text-cyan-800"; if(r.Status === 'รอจ่ายเลือด') statusClass = "border-blue-300 bg-blue-50 text-blue-800"; if(r.Status === 'จ่ายแล้ว') statusClass = "border-green-300 bg-green-50 text-green-800"; if(r.Status === 'แพทย์ยกเลิก') statusClass = "border-gray-400 bg-gray-200 text-gray-800";
 let reqDate = r.Date ? new Date(r.Date).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-';
 const originalIndex = db.BloodRequests.indexOf(r);
-let displayBloodGroup = r.BloodGroup || '-';
-if (db.Patients) { const p = db.Patients.find(x => x.HN == r.HN); if (p && p.BloodGroup_ABO && p.BloodGroup_ABO !== '-') { displayBloodGroup = `${p.BloodGroup_ABO} ${p.Rh || ''}`.trim(); } }
+let displayBloodGroup = getRequestBloodGroup(r) || '-';
 const displayWard = getRequestWard(r) || '-';
-return `<tr><td class="p-3 font-medium text-red-700">${r.HN || '-'}</td><td class="p-3">${r.Name || '-'}</td><td class="p-3">${r.Age || '-'}</td><td class="p-3 text-gray-600">${displayWard}</td><td class="p-3 font-bold text-red-600">${displayBloodGroup}</td><td class="p-3">${r.Disease || '-'}</td><td class="p-3 text-gray-500 text-xs">${reqDate}</td><td class="p-3 font-medium">${r.Product || '-'}</td><td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${urgClass}">${r.Urgency || '-'}</span></td><td class="p-3"><span class="px-2 py-1 rounded text-xs border ${statusClass}">${r.Status || '-'}</span></td><td class="p-3 text-center print-hide"><button onclick="event.stopPropagation(); promptDelete('request', ${originalIndex}, 'การจองเลือด HN: ${r.HN}')" class="text-gray-500 hover:bg-red-50 hover:text-red-600 px-3 py-1 rounded-full transition border border-gray-200 hover:border-red-200 text-xs shadow-sm font-medium"><i class="fa-solid fa-trash"></i> ลบ</button></td></tr>`;
+const allergyBadge = getAllergyBadgeHTML(getRequestAllergyHistory(r));
+return `<tr><td class="p-3 font-medium text-red-700">${r.HN || '-'}</td><td class="p-3">${r.Name || '-'}${allergyBadge}</td><td class="p-3">${r.Age || '-'}</td><td class="p-3 text-gray-600">${displayWard}</td><td class="p-3 font-bold text-red-600">${displayBloodGroup}</td><td class="p-3">${r.Disease || '-'}</td><td class="p-3 text-gray-500 text-xs">${reqDate}</td><td class="p-3 font-medium">${r.Product || '-'}</td><td class="p-3 text-center"><span class="px-2 py-1 rounded text-xs ${urgClass}">${r.Urgency || '-'}</span></td><td class="p-3"><span class="px-2 py-1 rounded text-xs border ${statusClass}">${r.Status || '-'}</span></td><td class="p-3 text-center print-hide min-w-[150px]"><button onclick="event.stopPropagation(); openEditRequest(${originalIndex})" class="text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-full transition border border-indigo-200 text-xs shadow-sm font-medium"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button><button onclick="event.stopPropagation(); promptDelete('request', ${originalIndex}, 'การจองเลือด HN: ${r.HN}')" class="text-gray-500 hover:bg-red-50 hover:text-red-600 px-3 py-1 rounded-full transition border border-gray-200 hover:border-red-200 text-xs shadow-sm font-medium ml-1"><i class="fa-solid fa-trash"></i> ลบ</button></td></tr>`;
 }).reverse().join(''); 
+}
+
+let patientsSortState = { key: 'Latest', direction: 'desc' };
+
+function updatePatientSortIcons() {
+const keys = ['HN', 'Name', 'Age', 'Latest', 'Ward', 'Forward', 'Reverse', 'Group', 'Antibody'];
+keys.forEach(key => {
+const icon = document.getElementById(`sort-icon-patients-${key}`);
+if (!icon) return;
+if (patientsSortState.key === key) {
+icon.className = patientsSortState.direction === 'asc' ? 'fa-solid fa-sort-up text-red-600 text-xs' : 'fa-solid fa-sort-down text-red-600 text-xs';
+} else {
+icon.className = 'fa-solid fa-sort text-gray-400 text-xs';
+}
+});
+}
+
+function sortPatients(key) {
+if (patientsSortState.key === key) {
+patientsSortState.direction = patientsSortState.direction === 'asc' ? 'desc' : 'asc';
+} else {
+patientsSortState = { key, direction: 'asc' };
+}
+renderPatients(document.getElementById('search-patient')?.value || '');
 }
 
 function filterPatients() { const term = document.getElementById('search-patient').value; renderPatients(term); }
@@ -880,24 +1127,51 @@ function filterPatients() { const term = document.getElementById('search-patient
 function renderPatients(searchTerm = "") {
 if(!document.getElementById('page-patients').classList.contains('active')) return;
 let combinedPatientsMap = new Map();
-if (db.Patients) { db.Patients.forEach(p => { let sanitizedP = {...p}; if(sanitizedP.Age === 'undefined') sanitizedP.Age = ''; if(sanitizedP.Gender === 'undefined') sanitizedP.Gender = ''; combinedPatientsMap.set(p.HN, sanitizedP); }); }
+if (db.Patients) { db.Patients.forEach(p => { let sanitizedP = {...p}; if(sanitizedP.Age === 'undefined') sanitizedP.Age = ''; if(sanitizedP.Gender === 'undefined') sanitizedP.Gender = ''; sanitizedP.SortTimestamp = sanitizedP.LastUpdated || sanitizedP.Date || sanitizedP.CreatedAt || ''; combinedPatientsMap.set(p.HN, sanitizedP); }); }
 if (db.BloodRequests) {
 db.BloodRequests.forEach(r => {
 let reqAge = (r.Age === 'undefined' || !r.Age) ? '' : r.Age; let reqGender = (r.Gender === 'undefined' || !r.Gender) ? '' : r.Gender;
-if (!combinedPatientsMap.has(r.HN)) { combinedPatientsMap.set(r.HN, { HN: r.HN, Name: r.Name, Age: reqAge, Gender: reqGender, Ward: r.Ward, BloodGroup_ABO: '-', Rh: '-', BloodGroupResult_Forward: '-', BloodGroupResult_Reverse: '-', Antibody: '-', AllergyHistory: '-' }); } else { let existing = combinedPatientsMap.get(r.HN); if (!existing.Age || existing.Age === '-' || existing.Age === 'undefined') existing.Age = reqAge; if (!existing.Gender || existing.Gender === '-' || existing.Gender === 'undefined') existing.Gender = reqGender; combinedPatientsMap.set(r.HN, existing); }
+if (!combinedPatientsMap.has(r.HN)) { combinedPatientsMap.set(r.HN, { HN: r.HN, Name: r.Name, Age: reqAge, Gender: reqGender, Ward: getRequestWard(r), BloodGroup_ABO: '-', Rh: '-', BloodGroupResult_Forward: '-', BloodGroupResult_Reverse: '-', Antibody: '-', AllergyHistory: getRequestAllergyHistory(r) || '-', SortTimestamp: r.Date || '' }); } else { let existing = combinedPatientsMap.get(r.HN); if (!existing.Age || existing.Age === '-' || existing.Age === 'undefined') existing.Age = reqAge; if (!existing.Gender || existing.Gender === '-' || existing.Gender === 'undefined') existing.Gender = reqGender; if (!existing.Ward || existing.Ward === '-' || existing.Ward === 'undefined') existing.Ward = getRequestWard(r); if ((!existing.AllergyHistory || existing.AllergyHistory === '-' || existing.AllergyHistory === 'undefined') && getRequestAllergyHistory(r)) existing.AllergyHistory = getRequestAllergyHistory(r); if (!existing.SortTimestamp) existing.SortTimestamp = r.Date || ''; combinedPatientsMap.set(r.HN, existing); }
 });
 }
-let combinedPatients = Array.from(combinedPatientsMap.values()).reverse();
-if (searchTerm && searchTerm.trim() !== "") { const term = searchTerm.toLowerCase(); combinedPatients = combinedPatients.filter(p => (p.HN && String(p.HN).toLowerCase().includes(term)) || (p.Name && String(p.Name).toLowerCase().includes(term)) || (p.Ward && String(p.Ward).toLowerCase().includes(term)) ); }
+let combinedPatients = Array.from(combinedPatientsMap.values());
+if (searchTerm && searchTerm.trim() !== "") { const term = searchTerm.toLowerCase(); combinedPatients = combinedPatients.filter(p => (p.HN && String(p.HN).toLowerCase().includes(term)) || (p.Name && String(p.Name).toLowerCase().includes(term)) || (p.Ward && String(p.Ward).toLowerCase().includes(term)) || (p.BloodGroupResult_Forward && String(p.BloodGroupResult_Forward).toLowerCase().includes(term)) || (p.BloodGroupResult_Reverse && String(p.BloodGroupResult_Reverse).toLowerCase().includes(term)) || (p.Antibody && String(p.Antibody).toLowerCase().includes(term)) || (p.AllergyHistory && String(p.AllergyHistory).toLowerCase().includes(term)) ); }
+if (patientsSortState.key === 'Latest') {
+combinedPatients.sort((a, b) => {
+const av = a.SortTimestamp ? new Date(a.SortTimestamp).getTime() : 0;
+const bv = b.SortTimestamp ? new Date(b.SortTimestamp).getTime() : 0;
+return bv - av;
+});
+} else if (patientsSortState.key) {
+combinedPatients.sort((a, b) => {
+const getValue = (p, key) => {
+if (key === 'HN') return String(p.HN || '').toLowerCase();
+if (key === 'Name') return String(p.Name || '').toLowerCase();
+if (key === 'Age') return String(`${p.Age || ''}/${p.Gender || ''}`).toLowerCase();
+if (key === 'Latest') return String(p.SortTimestamp || '').toLowerCase();
+if (key === 'Ward') return String(p.Ward || '').toLowerCase();
+if (key === 'Forward') return String(p.BloodGroupResult_Forward || '').toLowerCase();
+if (key === 'Reverse') return String(p.BloodGroupResult_Reverse || '').toLowerCase();
+if (key === 'Group') return String(`${p.BloodGroup_ABO || ''} ${p.Rh || ''}`).toLowerCase();
+if (key === 'Antibody') return String(`${p.Antibody || ''} ${p.AllergyHistory || ''}`).toLowerCase();
+return '';
+};
+const av = getValue(a, patientsSortState.key);
+const bv = getValue(b, patientsSortState.key);
+const comparison = av.localeCompare(bv, 'th');
+return patientsSortState.direction === 'asc' ? comparison : -comparison;
+});
+}
 combinedPatients = combinedPatients.slice(0, 5);
 const tbody = document.getElementById('table-patients');
-if (combinedPatients.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-gray-500">ไม่มีข้อมูลผู้ป่วย หรือไม่พบข้อมูลที่ค้นหา</td></tr>'; return; }
+if (combinedPatients.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-gray-500">ไม่มีข้อมูลผู้ป่วย หรือไม่พบข้อมูลที่ค้นหา</td></tr>'; updatePatientSortIcons(); return; }
 tbody.innerHTML = combinedPatients.map(p => {
 let badgeClass = "bg-gray-100 text-gray-800"; if(p.BloodGroup_ABO === 'O') badgeClass = "bg-blue-100 text-blue-800"; if(p.BloodGroup_ABO === 'A') badgeClass = "bg-green-100 text-green-800"; if(p.BloodGroup_ABO === 'B') badgeClass = "bg-purple-100 text-purple-800"; if(p.BloodGroup_ABO === 'AB') badgeClass = "bg-pink-100 text-pink-800";
-let dangerClass = (p.AllergyHistory && p.AllergyHistory !== '-') ? "text-red-600 font-bold" : "";
-let displayAge = (p.Age && p.Age !== 'undefined') ? p.Age : '-'; let displayGender = (p.Gender && p.Gender !== 'undefined') ? p.Gender : '-';
-return `<tr class="hover:bg-gray-50 transition"><td class="p-3 font-medium">${p.HN || '-'}</td><td class="p-3">${p.Name || '-'}</td><td class="p-3">${displayAge}/${displayGender}</td><td class="p-3 text-gray-600">${p.Ward || '-'}</td><td class="p-3 text-gray-500">${p.BloodGroupResult_Forward || '-'}</td><td class="p-3 text-gray-500">${p.BloodGroupResult_Reverse || '-'}</td><td class="p-3"><span class="px-2 py-1 rounded text-xs border ${badgeClass} font-bold">${p.BloodGroup_ABO || '-'} ${p.Rh || ''}</span></td><td class="p-3">${p.Antibody && p.Antibody !== '-' ? `<span class="block text-xs font-bold text-orange-600">Anti: ${p.Antibody}</span>` : ''} ${p.AllergyHistory && p.AllergyHistory !== '-' ? `<span class="block text-xs ${dangerClass}"><i class="fa-solid fa-triangle-exclamation"></i> แพ้: ${p.AllergyHistory}</span>` : ''} ${(!p.Antibody || p.Antibody === '-') && (!p.AllergyHistory || p.AllergyHistory === '-') ? '<span class="text-gray-400">-</span>' : ''}</td><td class="p-3 text-center print-hide min-w-[130px]"><button onclick="openEditPatient('${p.HN}')" class="text-red-600 hover:bg-red-50 px-3 py-1 rounded-full transition border border-red-200 text-xs shadow-sm font-medium"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button><button onclick="promptDelete('patient', '${p.HN}', 'ผู้ป่วย HN: ${p.HN}')" class="text-gray-500 hover:bg-red-50 hover:text-red-600 px-3 py-1 rounded-full transition border border-gray-200 hover:border-red-200 text-xs shadow-sm font-medium ml-1"><i class="fa-solid fa-trash"></i> ลบ</button></td></tr>`;
+let dangerClass = hasBloodAllergyText(p.AllergyHistory) ? "text-red-600 font-bold" : "";
+let displayAge = (p.Age && p.Age !== 'undefined') ? p.Age : '-'; let displayGender = (p.Gender && p.Gender !== 'undefined') ? p.Gender : '-'; let displayDate = p.SortTimestamp ? new Date(p.SortTimestamp).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric' }) : '-';
+return `<tr class="hover:bg-gray-50 transition"><td class="p-3 font-medium">${p.HN || '-'}</td><td class="p-3">${p.Name || '-'}</td><td class="p-3">${displayAge}/${displayGender}</td><td class="p-3 text-gray-600 text-xs">${displayDate}</td><td class="p-3 text-gray-600">${p.Ward || '-'}</td><td class="p-3 text-gray-500">${p.BloodGroupResult_Forward || '-'}</td><td class="p-3 text-gray-500">${p.BloodGroupResult_Reverse || '-'}</td><td class="p-3"><span class="px-2 py-1 rounded text-xs border ${badgeClass} font-bold">${p.BloodGroup_ABO || '-'} ${p.Rh || ''}</span></td><td class="p-3">${p.Antibody && p.Antibody !== '-' ? `<span class="block text-xs font-bold text-orange-600">Anti: ${p.Antibody}</span>` : ''} ${hasBloodAllergyText(p.AllergyHistory) ? `<span class="block text-xs ${dangerClass}"><i class="fa-solid fa-triangle-exclamation"></i> แพ้: ${p.AllergyHistory}</span>` : ''} ${(!p.Antibody || p.Antibody === '-') && !hasBloodAllergyText(p.AllergyHistory) ? '<span class="text-gray-400">-</span>' : ''}</td><td class="p-3 text-center print-hide min-w-[130px]"><button onclick="openEditPatient('${p.HN}')" class="text-red-600 hover:bg-red-50 px-3 py-1 rounded-full transition border border-red-200 text-xs shadow-sm font-medium"><i class="fa-solid fa-pen-to-square"></i> แก้ไข</button><button onclick="promptDelete('patient', '${p.HN}', 'ผู้ป่วย HN: ${p.HN}')" class="text-gray-500 hover:bg-red-50 hover:text-red-600 px-3 py-1 rounded-full transition border border-gray-200 hover:border-red-200 text-xs shadow-sm font-medium ml-1"><i class="fa-solid fa-trash"></i> ลบ</button></td></tr>`;
 }).join('');
+updatePatientSortIcons();
 }
 
 let sortColInv = ''; let sortDirInv = 'asc';
@@ -935,19 +1209,142 @@ return `<tr class="hover:bg-gray-50 transition"><td class="p-3 text-gray-500 tex
 function renderReport() {
 if(!document.getElementById('page-report').classList.contains('active')) return;
 document.getElementById('report-print-date').innerText = new Date().toLocaleString('th-TH');
-const inv = db.BloodInventory || []; const disp = db.BloodDispense || []; const trans = db.Transfusion || [];
-const totalIn = inv.length; const totalDispensed = disp.length; const totalReaction = trans.filter(t => t.Reaction !== 'None').length; const totalExpired = inv.filter(i => i.Status === 'Expired').length; const totalRelativeDonation = inv.filter(i => i.Remark === 'เลือดญาติที่ไปบริจาค').length;
-document.getElementById('report-summary-cards').innerHTML = `<div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex items-center justify-between"><div><p class="text-indigo-800 text-sm font-bold mb-1">ยอดรับเข้าคลังสะสม</p><h3 class="text-3xl font-black text-indigo-600">${totalIn} <span class="text-sm font-normal">ยูนิต</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-500 text-xl shadow-sm"><i class="fa-solid fa-box-open"></i></div></div><div class="bg-green-50 p-4 rounded-xl border border-green-100 flex items-center justify-between"><div><p class="text-green-800 text-sm font-bold mb-1">ยอดจ่ายเลือดออกสะสม</p><h3 class="text-3xl font-black text-green-600">${totalDispensed} <span class="text-sm font-normal">ยูนิต</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-green-500 text-xl shadow-sm"><i class="fa-solid fa-truck-medical"></i></div></div><div class="bg-rose-50 p-4 rounded-xl border border-rose-100 flex items-center justify-between"><div><p class="text-rose-800 text-sm font-bold mb-1">ยอดการเกิด Reaction</p><h3 class="text-3xl font-black text-rose-600">${totalReaction} <span class="text-sm font-normal">ครั้ง</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-rose-500 text-xl shadow-sm"><i class="fa-solid fa-triangle-exclamation"></i></div></div><div class="bg-gray-50 p-4 rounded-xl border border-gray-200 flex items-center justify-between"><div><p class="text-gray-800 text-sm font-bold mb-1">ยอดเลือดหมดอายุ (Loss)</p><h3 class="text-3xl font-black text-gray-600">${totalExpired} <span class="text-sm font-normal">ยูนิต</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-gray-500 text-xl shadow-sm"><i class="fa-solid fa-trash-can"></i></div></div><div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200 flex items-center justify-between"><div><p class="text-yellow-800 text-sm font-bold mb-1">เลือดญาติบริจาค</p><h3 class="text-3xl font-black text-yellow-600">${totalRelativeDonation} <span class="text-sm font-normal">ยูนิต</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-yellow-500 text-xl shadow-sm"><i class="fa-solid fa-hand-holding-droplet"></i></div></div>`;
+const parseReportTime = value => {
+if(value === null || value === undefined || value === '') return null;
+if(value instanceof Date) return !isNaN(value.getTime()) ? value : null;
+if(typeof value === 'number') {
+if(value > 1000 && value < 100000) return new Date(new Date(1899, 11, 30).getTime() + value * 86400000);
+const numericDate = new Date(value);
+return !isNaN(numericDate.getTime()) ? numericDate : null;
+}
+const raw = String(value).trim();
+if(!raw || raw === '-' || raw.toLowerCase() === 'undefined' || raw.toLowerCase() === 'null') return null;
+if(/^\d+(\.\d+)?$/.test(raw)) return parseReportTime(Number(raw));
+if(/^\d{4}-\d{2}-\d{2}T/.test(raw) || /Z$/.test(raw) || /[+-]\d{2}:?\d{2}$/.test(raw)) {
+const isoDate = new Date(raw);
+if(!isNaN(isoDate.getTime())) return isoDate;
+}
+const makeDate = (year, month, day, hour = 0, minute = 0, second = 0) => {
+year = Number(year); month = Number(month); day = Number(day); hour = Number(hour); minute = Number(minute); second = Number(second);
+if(year < 100) year += 2000;
+if(year > 2400) year -= 543;
+const d = new Date(year, month - 1, day, hour, minute, second);
+return d && !isNaN(d.getTime()) && d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day ? d : null;
+};
+const normalized = raw.replace(/\./g, '/').replace(/\s+/g, ' ');
+let m = normalized.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+if(m) return makeDate(m[1], m[2], m[3], m[4] || 0, m[5] || 0, m[6] || 0);
+m = normalized.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+if(m) return makeDate(m[3], m[2], m[1], m[4] || 0, m[5] || 0, m[6] || 0);
+const d = new Date(raw);
+return d && !isNaN(d.getTime()) ? d : null;
+};
+const selectedMonth = document.getElementById('report-month') ? document.getElementById('report-month').value : '';
+const monthLabel = selectedMonth ? new Date(`${selectedMonth}-01T00:00:00`).toLocaleDateString('th-TH', { year: 'numeric', month: 'long' }) : 'ทั้งหมด';
+const reportMonthText = document.getElementById('report-month-text'); if(reportMonthText) reportMonthText.innerText = monthLabel;
+const reportPrintMonth = document.getElementById('report-print-month'); if(reportPrintMonth) reportPrintMonth.innerText = monthLabel;
+const isInSelectedMonth = value => {
+if(!selectedMonth) return true;
+const d = parseReportTime(value);
+if(!d) return false;
+const y = d.getFullYear();
+const m = String(d.getMonth() + 1).padStart(2, '0');
+return `${y}-${m}` === selectedMonth;
+};
+const hasDateInSelectedMonth = (...values) => !selectedMonth || values.some(value => isInSelectedMonth(value));
+const allInv = db.BloodInventory || []; const allDisp = db.BloodDispense || []; const allTrans = db.Transfusion || [];
+const disp = allDisp.filter(d => isInSelectedMonth(d.DateTime));
+const dispensedUnitIds = new Set(disp.map(d => String(d.UnitID || '')));
+const inv = allInv.filter(i => hasDateInSelectedMonth(i.ReceivedDate, i.Date, i.ExpiryDate) || (selectedMonth && dispensedUnitIds.has(String(i.UnitID || ''))));
+const trans = allTrans.filter(t => hasDateInSelectedMonth(t.StartTime, t.EndTime, t.DateTime, t.Date));
+const latestTransMap = {};
+trans.forEach((t, index) => { const key = `${t.HN || ''}|${t.UnitID || ''}`; const date = parseReportTime(t.StartTime || t.EndTime || t.DateTime || t.Date); const ts = date ? date.getTime() : NaN; const score = Number.isFinite(ts) ? ts : index; if(!latestTransMap[key] || score >= latestTransMap[key].score) latestTransMap[key] = { record: t, score }; });
+const latestTrans = Object.values(latestTransMap).map(item => item.record);
+const remarkItems = inv.filter(i => !isBlankClinicalText(i.Remark) && String(i.Remark).trim() !== '-');
+const expiredItems = allInv.filter(i => i.Status === 'Expired' && hasDateInSelectedMonth(i.ExpiryDate, i.ReceivedDate));
+const totalIn = inv.length; const totalDispensed = disp.length; const totalReaction = latestTrans.filter(t => t.Reaction !== 'None').length; const totalExpired = expiredItems.length; const totalRelativeDonation = inv.filter(i => i.Remark === 'เลือดญาติที่ไปบริจาค').length;
+const periodSummaryLabel = selectedMonth ? 'ประจำเดือน' : 'สะสม';
+document.getElementById('report-summary-cards').innerHTML = `<div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex items-center justify-between"><div><p class="text-indigo-800 text-sm font-bold mb-1">ยอดรับเข้าคลัง${periodSummaryLabel}</p><h3 class="text-3xl font-black text-indigo-600">${totalIn} <span class="text-sm font-normal">ยูนิต</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-500 text-xl shadow-sm"><i class="fa-solid fa-box-open"></i></div></div><div class="bg-green-50 p-4 rounded-xl border border-green-100 flex items-center justify-between"><div><p class="text-green-800 text-sm font-bold mb-1">ยอดจ่ายเลือดออก${periodSummaryLabel}</p><h3 class="text-3xl font-black text-green-600">${totalDispensed} <span class="text-sm font-normal">ยูนิต</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-green-500 text-xl shadow-sm"><i class="fa-solid fa-truck-medical"></i></div></div><div class="bg-rose-50 p-4 rounded-xl border border-rose-100 flex items-center justify-between"><div><p class="text-rose-800 text-sm font-bold mb-1">ยอดการเกิด Reaction</p><h3 class="text-3xl font-black text-rose-600">${totalReaction} <span class="text-sm font-normal">ครั้ง</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-rose-500 text-xl shadow-sm"><i class="fa-solid fa-triangle-exclamation"></i></div></div><div class="bg-gray-50 p-4 rounded-xl border border-gray-200 flex items-center justify-between"><div><p class="text-gray-800 text-sm font-bold mb-1">ยอดเลือดหมดอายุ (Loss)</p><h3 class="text-3xl font-black text-gray-600">${totalExpired} <span class="text-sm font-normal">ยูนิต</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-gray-500 text-xl shadow-sm"><i class="fa-solid fa-trash-can"></i></div></div><div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200 flex items-center justify-between"><div><p class="text-yellow-800 text-sm font-bold mb-1">เลือดญาติบริจาค</p><h3 class="text-3xl font-black text-yellow-600">${totalRelativeDonation} <span class="text-sm font-normal">ยูนิต</span></h3></div><div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-yellow-500 text-xl shadow-sm"><i class="fa-solid fa-hand-holding-droplet"></i></div></div>`;
+const formatReportTime = date => date ? date.toLocaleString('th-TH', { year: '2-digit', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+const formatDuration = ms => {
+if(!Number.isFinite(ms) || ms < 0) return '-';
+const totalMinutes = Math.round(ms / 60000);
+const days = Math.floor(totalMinutes / 1440);
+const hours = Math.floor((totalMinutes % 1440) / 60);
+const minutes = totalMinutes % 60;
+if(days > 0) return `${days} วัน ${hours} ชม. ${minutes} นาที`;
+if(hours > 0) return `${hours} ชม. ${minutes} นาที`;
+return `${minutes} นาที`;
+};
+const allReportRequests = (db.BloodRequests || []).map((record, index) => ({ record, date: parseReportTime(record.Date), index })).filter(item => item.record.HN && item.date).sort((a, b) => b.date - a.date || b.index - a.index);
+const findRequestForEvent = (hn, eventDate) => {
+if(!hn || !eventDate) return null;
+const matched = allReportRequests.find(item => item.record.HN == hn && item.date <= eventDate);
+return matched ? matched.record : null;
+};
+const buildTurnaroundRows = (events, getEventTime, getUnitId, getProduct) => {
+return events.map(event => {
+const finishDate = getEventTime(event);
+const request = findRequestForEvent(event.HN, finishDate);
+const requestDate = request ? parseReportTime(request.Date) : null;
+if(!request || !requestDate || !finishDate || finishDate < requestDate) return null;
+const patient = (db.Patients || []).find(p => p.HN == event.HN);
+return { HN: event.HN || '-', Name: patient ? patient.Name : (request.Name || '-'), UnitID: getUnitId(event), Product: getProduct(event, request), RequestDate: requestDate, FinishDate: finishDate, DurationMs: finishDate - requestDate };
+}).filter(Boolean).sort((a, b) => b.FinishDate - a.FinishDate);
+};
+const reportCrossmatch = (db.Crossmatch || []).filter(cm => isInSelectedMonth(cm.Date));
+const reportDispense = disp;
+const tatCrossmatchRows = buildTurnaroundRows(reportCrossmatch, cm => parseReportTime(cm.Date), cm => cm.UnitID || '-', (cm, req) => cm.Product || req.Product || '-');
+const tatDispenseRows = buildTurnaroundRows(reportDispense, d => parseReportTime(d.DateTime), d => d.UnitID || '-', (d, req) => { const blood = (db.BloodInventory || []).find(b => b.UnitID == d.UnitID); return blood ? (blood.Product || '-') : (req.Product || '-'); });
+const getTatStats = rows => {
+if(!rows.length) return { count: 0, avg: '-', min: '-', max: '-' };
+const values = rows.map(r => r.DurationMs);
+return { count: rows.length, avg: formatDuration(values.reduce((sum, v) => sum + v, 0) / values.length), min: formatDuration(Math.min(...values)), max: formatDuration(Math.max(...values)) };
+};
+const crossStats = getTatStats(tatCrossmatchRows);
+const dispenseStats = getTatStats(tatDispenseRows);
+let tatHtml = `<div class="mb-3 text-xs text-sky-700 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2">คำนวณจาก ${selectedMonth ? `ข้อมูลเดือน ${monthLabel}` : 'ข้อมูลทั้งหมดในระบบ'} ที่มี HN และวันเวลาครบถ้วน โดยจับคู่กับรายการลงทะเบียนจองเลือดล่าสุดก่อนเวลาสิ้นสุด</div><table class="w-full text-sm text-left border-collapse border border-gray-200 mb-4"><thead class="bg-sky-50 text-sky-800"><tr><th class="p-3 border border-sky-100">ช่วงเวลาที่คำนวณ</th><th class="p-3 border border-sky-100 text-center">ข้อมูลต้นทางทั้งหมด</th><th class="p-3 border border-sky-100 text-center">คำนวณได้</th><th class="p-3 border border-sky-100 text-center">เฉลี่ย</th><th class="p-3 border border-sky-100 text-center">เร็วสุด</th><th class="p-3 border border-sky-100 text-center">ช้าสุด</th></tr></thead><tbody><tr class="hover:bg-sky-50"><td class="p-3 border border-gray-200 font-bold">ลงทะเบียนจองเลือด -> บันทึกผลจองเลือดเสร็จ</td><td class="p-3 border border-gray-200 text-center">${reportCrossmatch.length}</td><td class="p-3 border border-gray-200 text-center">${crossStats.count}</td><td class="p-3 border border-gray-200 text-center font-bold text-sky-700">${crossStats.avg}</td><td class="p-3 border border-gray-200 text-center text-green-700">${crossStats.min}</td><td class="p-3 border border-gray-200 text-center text-red-700">${crossStats.max}</td></tr><tr class="hover:bg-sky-50"><td class="p-3 border border-gray-200 font-bold">ลงทะเบียนจองเลือด -> จ่ายเลือดเสร็จ</td><td class="p-3 border border-gray-200 text-center">${reportDispense.length}</td><td class="p-3 border border-gray-200 text-center">${dispenseStats.count}</td><td class="p-3 border border-gray-200 text-center font-bold text-sky-700">${dispenseStats.avg}</td><td class="p-3 border border-gray-200 text-center text-green-700">${dispenseStats.min}</td><td class="p-3 border border-gray-200 text-center text-red-700">${dispenseStats.max}</td></tr></tbody></table>`;
+document.getElementById('report-turnaround').innerHTML = tatHtml;
 let groupHtml = `<table class="w-full text-sm text-left border-collapse border border-gray-200"><thead class="bg-indigo-50 text-indigo-800"><tr><th class="p-3 border border-indigo-100 text-center font-bold">หมู่เลือด (ABO)</th><th class="p-3 border border-indigo-100 text-center">รับเข้าทั้งหมด (ยูนิต)</th><th class="p-3 border border-indigo-100 text-center">คงเหลือพร้อมใช้ (Available)</th><th class="p-3 border border-indigo-100 text-center">ถูกจอง (Reserved)</th><th class="p-3 border border-indigo-100 text-center">จ่ายออก/ใช้แล้ว (Dispensed/Used)</th><th class="p-3 border border-indigo-100 text-center">หมดอายุ (Expired)</th></tr></thead><tbody class="divide-y divide-gray-200">`;
 ['A', 'B', 'O', 'AB'].forEach(g => {
 let gIn = inv.filter(i => i.BloodGroup === g).length; let gAvail = inv.filter(i => i.BloodGroup === g && i.Status === 'Available').length; let gRes = inv.filter(i => i.BloodGroup === g && i.Status === 'Reserved').length; let gDisp = inv.filter(i => i.BloodGroup === g && (i.Status === 'Dispensed' || i.Status === 'Used')).length; let gExp = inv.filter(i => i.BloodGroup === g && i.Status === 'Expired').length;
 groupHtml += `<tr class="hover:bg-gray-50"><td class="p-3 border border-gray-200 text-center font-bold text-lg text-gray-700">${g}</td><td class="p-3 border border-gray-200 text-center font-medium">${gIn}</td><td class="p-3 border border-gray-200 text-center font-bold text-green-600">${gAvail}</td><td class="p-3 border border-gray-200 text-center text-yellow-600">${gRes}</td><td class="p-3 border border-gray-200 text-center text-indigo-600">${gDisp}</td><td class="p-3 border border-gray-200 text-center text-red-600">${gExp}</td></tr>`;
 });
 groupHtml += `</tbody></table>`; document.getElementById('report-details').innerHTML = groupHtml;
+const remarkSummary = {};
+remarkItems.forEach(item => {
+const remark = String(item.Remark).trim();
+if(!remarkSummary[remark]) remarkSummary[remark] = { total: 0, available: 0, reserved: 0, dispensed: 0, expired: 0, units: [] };
+remarkSummary[remark].total++;
+if(item.Status === 'Available') remarkSummary[remark].available++;
+else if(item.Status === 'Reserved') remarkSummary[remark].reserved++;
+else if(item.Status === 'Expired') remarkSummary[remark].expired++;
+else if(item.Status === 'Dispensed' || item.Status === 'Used') remarkSummary[remark].dispensed++;
+remarkSummary[remark].units.push(item.UnitID || '-');
+});
+let remarkHtml = `<table class="w-full text-sm text-left border-collapse border border-gray-200"><thead class="bg-amber-50 text-amber-800"><tr><th class="p-3 border border-amber-100">หมายเหตุ</th><th class="p-3 border border-amber-100 text-center">รวม</th><th class="p-3 border border-amber-100 text-center">พร้อมใช้</th><th class="p-3 border border-amber-100 text-center">ถูกจอง</th><th class="p-3 border border-amber-100 text-center">จ่าย/ใช้แล้ว</th><th class="p-3 border border-amber-100 text-center">หมดอายุ</th><th class="p-3 border border-amber-100">Unit ID</th></tr></thead><tbody class="divide-y divide-gray-200">`;
+const remarkRows = Object.entries(remarkSummary).sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0], 'th'));
+if(remarkRows.length > 0) {
+remarkRows.forEach(([remark, summary]) => {
+const unitPreview = summary.units.slice(0, 12).map(u => escapeHTML(u)).join(', ');
+const more = summary.units.length > 12 ? ` และอีก ${summary.units.length - 12} รายการ` : '';
+remarkHtml += `<tr class="hover:bg-amber-50"><td class="p-3 border border-gray-200 font-bold text-amber-800">${escapeHTML(remark)}</td><td class="p-3 border border-gray-200 text-center font-bold">${summary.total}</td><td class="p-3 border border-gray-200 text-center text-green-600 font-medium">${summary.available}</td><td class="p-3 border border-gray-200 text-center text-yellow-600">${summary.reserved}</td><td class="p-3 border border-gray-200 text-center text-indigo-600">${summary.dispensed}</td><td class="p-3 border border-gray-200 text-center text-red-600">${summary.expired}</td><td class="p-3 border border-gray-200 text-xs text-gray-600">${unitPreview}${more}</td></tr>`;
+});
+} else {
+remarkHtml += `<tr><td colspan="7" class="p-6 text-center text-gray-500 font-medium">ไม่พบรายการหมายเหตุในคลังเลือด</td></tr>`;
+}
+remarkHtml += `</tbody></table>`;
+document.getElementById('report-remarks').innerHTML = remarkHtml;
 let reactHtml = `<table class="w-full text-sm text-left border-collapse border border-gray-200"><thead class="bg-rose-50 text-rose-800"><tr><th class="p-3 border border-rose-100">วันที่พบอาการ</th><th class="p-3 border border-rose-100">HN ผู้ป่วย</th><th class="p-3 border border-rose-100">Unit ID ถุงเลือด</th><th class="p-3 border border-rose-100 text-red-700">อาการผิดปกติ (Reaction)</th></tr></thead><tbody class="divide-y divide-gray-200">`;
-const reactionList = trans.filter(t => t.Reaction !== 'None');
-if(reactionList.length > 0) { reactionList.forEach(t => { let d = new Date(t.StartTime).toLocaleString('th-TH'); reactHtml += `<tr class="hover:bg-rose-50"><td class="p-3 border border-gray-200 text-gray-600">${d}</td><td class="p-3 border border-gray-200 font-medium">${t.HN}</td><td class="p-3 border border-gray-200">${t.UnitID}</td><td class="p-3 border border-gray-200 font-bold text-red-600">${t.Reaction}</td></tr>`; }); } else { reactHtml += `<tr><td colspan="4" class="p-6 text-center text-gray-500 font-medium">ไม่พบประวัติปฏิกิริยาการให้เลือดในระบบ</td></tr>`; }
+const reactionList = latestTrans.filter(t => t.Reaction !== 'None');
+if(reactionList.length > 0) { reactionList.forEach(t => { let d = formatReportTime(parseReportTime(t.StartTime || t.EndTime || t.DateTime || t.Date)); reactHtml += `<tr class="hover:bg-rose-50"><td class="p-3 border border-gray-200 text-gray-600">${d}</td><td class="p-3 border border-gray-200 font-medium">${t.HN}</td><td class="p-3 border border-gray-200">${t.UnitID}</td><td class="p-3 border border-gray-200 font-bold text-red-600">${t.Reaction}</td></tr>`; }); } else { reactHtml += `<tr><td colspan="4" class="p-6 text-center text-gray-500 font-medium">ไม่พบประวัติปฏิกิริยาการให้เลือดในระบบ</td></tr>`; }
 reactHtml += `</tbody></table>`; document.getElementById('report-reactions').innerHTML = reactHtml;
+}
+
+function clearReportMonth() {
+const input = document.getElementById('report-month');
+if(input) input.value = '';
+renderReport();
 }
 
 function parseLegacyName(fullName) {
@@ -960,18 +1357,89 @@ let parts = fullName.split(/\s+/); if (parts.length > 1) { fname = parts[0]; lna
 function submitRequest(e) {
 e.preventDefault(); const product = document.getElementById('req-product').value; const qty = document.getElementById('req-qty').value; const combinedProduct = `${product} (${qty} ยูนิต)`; const title = document.getElementById('req-title').value; const fname = document.getElementById('req-fname').value; const lname = document.getElementById('req-lname').value; const fullName = `${title}${fname} ${lname}`.trim(); const gender = document.getElementById('req-gender').value; const bloodGroup = document.getElementById('req-blood-group').value;
 const ward = getSelectedWard('req-ward-select', 'req-ward'); if(!ward) return showToast("กรุณาเลือกหอผู้ป่วย", "warning");
+const allergyHistory = document.getElementById('req-allergy').value.trim();
 const data = [ document.getElementById('req-hn').value, fullName, document.getElementById('req-age').value, ward, document.getElementById('req-disease').value, combinedProduct, document.getElementById('req-urgency').value, document.getElementById('req-status').value, new Date().toISOString() ];
-if(!db.BloodRequests) db.BloodRequests = []; db.BloodRequests.push({ HN: data[0], Name: data[1], Age: data[2], Ward: data[3], Disease: data[4], Product: data[5], Qty: qty, Urgency: data[6], Status: data[7], Date: data[8], Title: title, FirstName: fname, LastName: lname, Gender: gender, BloodGroup: bloodGroup }); saveDB(); document.getElementById('modal-request').classList.add('hidden'); showToast("เพิ่มข้อมูลการจองเลือดสำเร็จ", "success"); e.target.reset(); setWardFields('req-ward-select', 'req-ward', ''); refreshActiveViews();
+if(!db.BloodRequests) db.BloodRequests = []; db.BloodRequests.push({ HN: data[0], Name: data[1], Age: data[2], Ward: data[3], Disease: data[4], Product: data[5], Qty: qty, Urgency: data[6], Status: data[7], Date: data[8], Title: title, FirstName: fname, LastName: lname, Gender: gender, BloodGroup: bloodGroup, AllergyHistory: allergyHistory }); saveDB(); document.getElementById('modal-request').classList.add('hidden'); showToast("เพิ่มข้อมูลการจองเลือดสำเร็จ", "success"); if(hasBloodAllergyText(allergyHistory)) maybeShowBloodAllergyPopup({ HN: data[0], Name: fullName }, allergyHistory); e.target.reset(); updateRequestAllergyPanel(''); lastBloodAllergyAlertKey = ''; setWardFields('req-ward-select', 'req-ward', ''); refreshActiveViews();
 }
 
 function autoFillRequest() {
 const hn = document.getElementById('req-hn').value;
 if (hn) {
-let p = db.Patients ? db.Patients.find(x => x.HN == hn) : null; let req = db.BloodRequests ? [...db.BloodRequests].reverse().find(x => x.HN == hn) : null; let title = '', fname = '', lname = '', age = '', gender = '', bg = '', ward = '';
-if (p) { if (p.Title || p.FirstName) { title = p.Title || ''; fname = p.FirstName || ''; lname = p.LastName || ''; } else if (p.Name) { const parsed = parseLegacyName(p.Name); title = parsed.title; fname = parsed.fname; lname = parsed.lname; } age = p.Age || ''; gender = p.Gender || ''; ward = p.Ward || ''; if (p.BloodGroup_ABO && p.BloodGroup_ABO !== '-') bg = `${p.BloodGroup_ABO} ${p.Rh || ''}`.trim(); } else if (req) { if (req.Title || req.FirstName) { title = req.Title || ''; fname = req.FirstName || ''; lname = req.LastName || ''; } else if (req.Name) { const parsed = parseLegacyName(req.Name); title = parsed.title; fname = parsed.fname; lname = parsed.lname; } age = req.Age || ''; gender = req.Gender || ''; ward = getRequestWard(req); bg = req.BloodGroup || ''; }
+let p = db.Patients ? db.Patients.find(x => x.HN == hn) : null; let req = db.BloodRequests ? [...db.BloodRequests].reverse().find(x => x.HN == hn) : null; let title = '', fname = '', lname = '', age = '', gender = '', bg = '', ward = '', allergy = '';
+if (p) { if (p.Title || p.FirstName) { title = p.Title || ''; fname = p.FirstName || ''; lname = p.LastName || ''; } else if (p.Name) { const parsed = parseLegacyName(p.Name); title = parsed.title; fname = parsed.fname; lname = parsed.lname; } age = p.Age || ''; gender = p.Gender || ''; ward = p.Ward || ''; allergy = getBloodAllergyHistoryByHN(hn); if (p.BloodGroup_ABO && p.BloodGroup_ABO !== '-') bg = `${p.BloodGroup_ABO} ${p.Rh || ''}`.trim(); } else if (req) { if (req.Title || req.FirstName) { title = req.Title || ''; fname = req.FirstName || ''; lname = req.LastName || ''; } else if (req.Name) { const parsed = parseLegacyName(req.Name); title = parsed.title; fname = parsed.fname; lname = parsed.lname; } age = req.Age || ''; gender = req.Gender || ''; ward = getRequestWard(req); bg = req.BloodGroup || ''; allergy = getRequestAllergyHistory(req); } else { allergy = getBloodAllergyHistoryByHN(hn); lastBloodAllergyAlertKey = ''; }
 document.getElementById('req-title').value = title; document.getElementById('req-fname').value = fname; document.getElementById('req-lname').value = lname; document.getElementById('req-age').value = age; document.getElementById('req-gender').value = gender; document.getElementById('req-blood-group').value = bg;
+document.getElementById('req-allergy').value = allergy; updateRequestAllergyPanel(allergy);
+if(p || req || hasBloodAllergyText(allergy)) maybeShowBloodAllergyPopup({ HN: hn, Name: p ? p.Name : (req ? req.Name : '-') }, allergy);
 setWardFields('req-ward-select', 'req-ward', ward);
-} else { ['req-title', 'req-fname', 'req-lname', 'req-age', 'req-gender', 'req-blood-group'].forEach(id => document.getElementById(id).value = ''); setWardFields('req-ward-select', 'req-ward', ''); }
+} else { ['req-title', 'req-fname', 'req-lname', 'req-age', 'req-gender', 'req-blood-group', 'req-allergy'].forEach(id => document.getElementById(id).value = ''); updateRequestAllergyPanel(''); lastBloodAllergyAlertKey = ''; setWardFields('req-ward-select', 'req-ward', ''); }
+}
+
+function setSelectValue(id, value) {
+const el = document.getElementById(id); if(!el) return; const val = value || '';
+if(val && !Array.from(el.options).some(opt => opt.value === val || opt.text === val)) el.add(new Option(val, val));
+el.value = val;
+}
+
+function toDatetimeLocalValue(value) {
+if(!value) return '';
+const date = new Date(value); if(isNaN(date.getTime())) return '';
+date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+return date.toISOString().slice(0, 16);
+}
+
+function parseRequestProductAndQty(request) {
+let product = request.Product || ''; let qty = request.Qty || '';
+const match = String(product).match(/^(.+?)\s*\((\d+)\s*ยูนิต\)/);
+if(match) { product = match[1].trim(); if(!qty) qty = match[2]; }
+return { product, qty: qty || '1' };
+}
+
+function openEditRequest(index) {
+const r = db.BloodRequests[index]; if(!r) return showToast("ไม่พบรายการจองเลือด", "danger");
+const parsed = r.Title || r.FirstName ? { title: r.Title || '', fname: r.FirstName || '', lname: r.LastName || '' } : parseLegacyName(r.Name || '');
+const productInfo = parseRequestProductAndQty(r);
+document.getElementById('edit-r-index').value = index;
+document.getElementById('edit-r-hn').value = r.HN || '';
+document.getElementById('edit-r-title').value = parsed.title || '';
+document.getElementById('edit-r-fname').value = parsed.fname || '';
+document.getElementById('edit-r-lname').value = parsed.lname || '';
+document.getElementById('edit-r-age').value = r.Age || '';
+document.getElementById('edit-r-gender').value = r.Gender || '';
+setWardFields('edit-r-ward-select', 'edit-r-ward', getRequestWard(r));
+document.getElementById('edit-r-disease').value = r.Disease || '';
+document.getElementById('edit-r-blood-group').value = getRequestBloodGroup(r) || '';
+document.getElementById('edit-r-allergy').value = getRequestAllergyHistory(r) || '';
+setSelectValue('edit-r-product', productInfo.product || 'PRC');
+document.getElementById('edit-r-qty').value = productInfo.qty || '1';
+setSelectValue('edit-r-urgency', r.Urgency || 'ปกติ');
+document.getElementById('edit-r-status').value = r.Status || 'รอรับแลป';
+document.getElementById('edit-r-date').value = toDatetimeLocalValue(r.Date);
+document.getElementById('modal-edit-request').classList.remove('hidden');
+}
+
+function submitEditRequest(e) {
+e.preventDefault(); const index = Number(document.getElementById('edit-r-index').value); if(!Number.isInteger(index) || !db.BloodRequests || !db.BloodRequests[index]) return showToast("ไม่พบรายการจองเลือด", "danger");
+const title = document.getElementById('edit-r-title').value; const fname = document.getElementById('edit-r-fname').value; const lname = document.getElementById('edit-r-lname').value; const fullName = `${title}${fname} ${lname}`.trim();
+const ward = getSelectedWard('edit-r-ward-select', 'edit-r-ward'); if(!ward) return showToast("กรุณาเลือกหอผู้ป่วย", "warning");
+const product = document.getElementById('edit-r-product').value; const qty = document.getElementById('edit-r-qty').value; const dateValue = document.getElementById('edit-r-date').value;
+db.BloodRequests[index] = Object.assign({}, db.BloodRequests[index], {
+HN: document.getElementById('edit-r-hn').value,
+Name: fullName,
+Age: document.getElementById('edit-r-age').value,
+Gender: document.getElementById('edit-r-gender').value,
+Ward: ward,
+Disease: document.getElementById('edit-r-disease').value,
+BloodGroup: document.getElementById('edit-r-blood-group').value,
+AllergyHistory: document.getElementById('edit-r-allergy').value.trim(),
+Product: `${product} (${qty} ยูนิต)`,
+Qty: qty,
+Urgency: document.getElementById('edit-r-urgency').value,
+Date: dateValue ? new Date(dateValue).toISOString() : (db.BloodRequests[index].Date || new Date().toISOString()),
+Title: title,
+FirstName: fname,
+LastName: lname
+});
+saveDB(); document.getElementById('modal-edit-request').classList.add('hidden'); showToast("แก้ไขรายการจองเลือดสำเร็จ", "success"); refreshActiveViews();
 }
 
 function submitPatient(e) {
@@ -1090,14 +1558,76 @@ invToUpdate.forEach(b => b.Status = 'Reserved'); if(!db.Crossmatch) db.Crossmatc
 saveDB(); showToast("บันทึก Crossmatch สำเร็จ", "success"); e.target.reset(); document.getElementById('crossmatch-units-container').innerHTML = ''; addCrossmatchUnitRow(); refreshActiveViews();
 }
 
+let crossmatchHistorySearchTerm = '';
+let crossmatchHistorySort = { key: 'Date', direction: 'desc' };
+
+function filterCrossmatchHistory() {
+const input = document.getElementById('search-crossmatch-history');
+crossmatchHistorySearchTerm = input ? input.value.trim().toLowerCase() : '';
+renderCrossmatchHistory();
+}
+
+function sortCrossmatchHistory(key) {
+if (crossmatchHistorySort.key === key) {
+crossmatchHistorySort.direction = crossmatchHistorySort.direction === 'asc' ? 'desc' : 'asc';
+} else {
+crossmatchHistorySort = { key, direction: 'desc' };
+}
+renderCrossmatchHistory();
+}
+
+function updateCrossmatchSortIcons() {
+const sortKeys = ['Date', 'HN', 'Name', 'UnitID', 'Product', 'Result', 'Staff'];
+sortKeys.forEach(key => {
+const icon = document.getElementById(`sort-icon-crossmatch-${key}`);
+if (!icon) return;
+if (crossmatchHistorySort.key === key) {
+icon.className = crossmatchHistorySort.direction === 'asc' ? 'fa-solid fa-sort-up text-indigo-600 text-xs' : 'fa-solid fa-sort-down text-indigo-600 text-xs';
+} else {
+icon.className = 'fa-solid fa-sort text-gray-400 text-xs';
+}
+});
+}
+
 function renderCrossmatchHistory() {
-const tbody = document.getElementById('table-crossmatch-history'); if(!tbody) return; if(!db.Crossmatch || db.Crossmatch.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">ยังไม่มีประวัติการทำ Crossmatch</td></tr>'; return; }
-tbody.innerHTML = [...db.Crossmatch].reverse().map(cm => {
+const tbody = document.getElementById('table-crossmatch-history'); if(!tbody) return; if(!db.Crossmatch || db.Crossmatch.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">ยังไม่มีประวัติการทำ Crossmatch</td></tr>'; updateCrossmatchSortIcons(); return; }
+let records = [...db.Crossmatch].reverse();
+if (crossmatchHistorySearchTerm) {
+const term = crossmatchHistorySearchTerm;
+records = records.filter(cm => {
+let p = db.Patients ? db.Patients.find(x => x.HN == cm.HN) : null; let req = db.BloodRequests ? [...db.BloodRequests].reverse().find(x => x.HN == cm.HN) : null; let pName = p ? p.Name : (req ? req.Name : ''); let blood = db.BloodInventory ? db.BloodInventory.find(x => x.UnitID == cm.UnitID) : null; let bProduct = blood ? (blood.Product || '') : '';
+const haystack = [cm.HN, pName, cm.UnitID, bProduct, cm.Staff, cm.Result].filter(Boolean).join(' ').toLowerCase();
+return haystack.includes(term);
+});
+}
+if (records.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">ไม่พบข้อมูลที่ค้นหา</td></tr>'; updateCrossmatchSortIcons(); return; }
+records = [...records].sort((a, b) => {
+const getValue = (cm, key) => {
+let p = db.Patients ? db.Patients.find(x => x.HN == cm.HN) : null; let req = db.BloodRequests ? [...db.BloodRequests].reverse().find(x => x.HN == cm.HN) : null; let pName = p ? p.Name : (req ? req.Name : ''); let blood = db.BloodInventory ? db.BloodInventory.find(x => x.UnitID == cm.UnitID) : null; let bProduct = blood ? (blood.Product || '-') : '-';
+if (key === 'Date') return new Date(cm.Date || 0).getTime();
+if (key === 'HN') return String(cm.HN || '').toLowerCase();
+if (key === 'Name') return String(pName).toLowerCase();
+if (key === 'UnitID') return String(cm.UnitID || '').toLowerCase();
+if (key === 'Product') return String(bProduct).toLowerCase();
+if (key === 'Result') return String(cm.Result || '').toLowerCase();
+if (key === 'Staff') return String(cm.Staff || '').toLowerCase();
+return '';
+};
+const av = getValue(a, crossmatchHistorySort.key);
+const bv = getValue(b, crossmatchHistorySort.key);
+if (typeof av === 'number' && typeof bv === 'number') {
+return crossmatchHistorySort.direction === 'asc' ? av - bv : bv - av;
+}
+const comparison = String(av).localeCompare(String(bv), 'th');
+return crossmatchHistorySort.direction === 'asc' ? comparison : -comparison;
+});
+tbody.innerHTML = records.map(cm => {
 let p = db.Patients ? db.Patients.find(x => x.HN == cm.HN) : null; let req = db.BloodRequests ? [...db.BloodRequests].reverse().find(x => x.HN == cm.HN) : null; let pName = p ? p.Name : (req ? req.Name : 'ไม่ทราบชื่อ'); let cmDate = cm.Date ? new Date(cm.Date).toLocaleString('th-TH', { year: '2-digit', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'; let blood = db.BloodInventory ? db.BloodInventory.find(x => x.UnitID == cm.UnitID) : null; let bProduct = blood ? (blood.Product || '-') : '-';
 let isComp = cm.Result && cm.Result.includes('Compatible') && !cm.Result.startsWith('Incompatible'); let resBadge = isComp ? `<span class="text-green-600 font-bold"><i class="fa-solid fa-check"></i> Compatible</span>` : `<span class="text-red-600 font-bold"><i class="fa-solid fa-xmark"></i> Incompatible</span>`;
 let detailStr = cm.Result; let shortDetail = detailStr; const match = detailStr.match(/^(Compatible|Incompatible) \[(.*?)\]/); if(match) shortDetail = `<span class="text-[10px] text-gray-500 block mt-0.5">${match[2]}</span>`;
 return `<tr class="hover:bg-indigo-50 transition"><td class="p-3 text-gray-600 text-xs">${cmDate}</td><td class="p-3 font-medium text-red-700">${cm.HN}</td><td class="p-3">${pName}</td><td class="p-3 font-bold">${cm.UnitID}</td><td class="p-3 font-medium text-rose-600">${bProduct}</td><td class="p-3">${resBadge} ${shortDetail !== detailStr ? shortDetail : ''}</td><td class="p-3 text-gray-500 text-xs">${cm.Staff || '-'}</td><td class="p-3 text-center print-hide min-w-[170px]"><button onclick="printBloodTag('${cm.CrossmatchID}')" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-full transition border border-blue-200 text-xs shadow-sm font-medium mr-1" title="พิมพ์ใบคล้องเลือด"><i class="fa-solid fa-print"></i> พิมพ์</button><button onclick="openEditCrossmatch('${cm.CrossmatchID}')" class="text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded-full transition border border-indigo-200 text-xs shadow-sm font-medium" title="แก้ไขผล"><i class="fa-solid fa-pen-to-square"></i></button><button onclick="promptDelete('crossmatch', '${cm.CrossmatchID}', 'ประวัติ Crossmatch ถุง: ${cm.UnitID}')" class="text-gray-500 hover:bg-red-50 hover:text-red-600 px-2 py-1 rounded-full transition border border-gray-200 hover:border-red-200 text-xs shadow-sm font-medium ml-1" title="ลบข้อมูล"><i class="fa-solid fa-trash"></i></button></td></tr>`;
 }).join('');
+updateCrossmatchSortIcons();
 }
 
 function printBloodTag(cmID) {
@@ -1139,19 +1669,97 @@ blood.Status = 'Dispensed'; if(db.BloodRequests) { const reqs = db.BloodRequests
 saveDB(); showToast("บันทึก Bedside Test และจ่ายเลือดสำเร็จ", "success"); document.getElementById('form-bedside-dispense').reset(); const nowTime = new Date(); const localTime = new Date(nowTime.getTime() - nowTime.getTimezoneOffset() * 60000).toISOString().slice(0,16); document.getElementById('bs-datetime').value = localTime; document.getElementById('dp-datetime').value = localTime; autoFillFlow(); refreshActiveViews();
 }
 
+function toggleReactionOtherInput() {
+const select = document.getElementById('tf-reaction');
+const group = document.getElementById('tf-reaction-other-group');
+const input = document.getElementById('tf-reaction-other');
+if (!select || !group || !input) return;
+const show = select.value === 'Other';
+group.classList.toggle('hidden', !show);
+if (!show) input.value = '';
+}
+
+function getLatestTransfusionIndex(hn, unit) {
+if(!db.Transfusion) return -1;
+let latestIndex = -1; let latestScore = -Infinity;
+db.Transfusion.forEach((t, index) => {
+if(t.HN != hn || t.UnitID != unit) return;
+const ts = new Date(t.StartTime || t.EndTime || 0).getTime();
+const score = Number.isFinite(ts) ? ts : index;
+if(score >= latestScore) { latestScore = score; latestIndex = index; }
+});
+return latestIndex;
+}
+
+function getLatestTransfusion(hn, unit) {
+const index = getLatestTransfusionIndex(hn, unit);
+return index >= 0 ? db.Transfusion[index] : null;
+}
+
+function getReactionSelectValue(reaction) {
+if(!reaction || reaction === 'None') return 'None';
+return ['Fever/Chills', 'Allergic', 'Hemolytic'].includes(reaction) ? reaction : 'Other';
+}
+
+function getReactionOtherValue(reaction) {
+return getReactionSelectValue(reaction) === 'Other' ? String(reaction || '').replace(/^Other:\s*/i, '') : '';
+}
+
+function getReactionOptionsHTML(selectedValue) {
+const options = [
+['None', '✅ ไม่มีอาการผิดปกติ'],
+['Fever/Chills', '⚠️ ไข้ /หนาวสั่น'],
+['Allergic', '⚠️ ผื่นแพ้ (Allergic)'],
+['Hemolytic', '🚨 Hemolytic Reaction (อันตราย!)'],
+['Other', '📝 อื่น ๆ']
+];
+return options.map(([value, label]) => `<option value="${value}" ${selectedValue === value ? 'selected' : ''}>${label}</option>`).join('');
+}
+
+function upsertTransfusionReaction(hn, unit, reaction) {
+if(!db.Transfusion) db.Transfusion = [];
+const now = new Date().toISOString();
+const index = getLatestTransfusionIndex(hn, unit);
+if(index >= 0) {
+db.Transfusion[index] = Object.assign({}, db.Transfusion[index], { HN: hn, UnitID: unit, Reaction: reaction, Status: 'Completed', EndTime: now, StartTime: db.Transfusion[index].StartTime || now });
+} else {
+db.Transfusion.push({ TransfusionID: "TF" + Date.now(), HN: hn, UnitID: unit, StartTime: now, EndTime: now, Reaction: reaction, Status: "Completed" });
+}
+const blood = (db.BloodInventory || []).find(b => b.UnitID == unit); if(blood) blood.Status = 'Used';
+return index >= 0 ? db.Transfusion[index] : db.Transfusion[db.Transfusion.length - 1];
+}
+
+function addReactionAlertIfNeeded(hn, reaction) {
+if(reaction === 'None') return false;
+if(!db.Alerts) db.Alerts = [];
+db.Alerts.push({AlertID: "ALR"+Date.now(), Type: "Danger: Transfusion Reaction", Message: reaction, HN: hn, DateTime: new Date().toISOString(), Status: "Active"});
+return true;
+}
+
+function getReactionEditorHTML(d, tf) {
+const currentReaction = tf ? (tf.Reaction || 'None') : 'None';
+const selected = getReactionSelectValue(currentReaction);
+const otherValue = getReactionOtherValue(currentReaction);
+const currentLine = tf ? `<p class="text-gray-700 mb-3">ค่าปัจจุบัน: <span class="${currentReaction === 'None' ? 'text-green-600' : 'text-red-600'} font-bold">${currentReaction === 'None' ? 'ไม่มีอาการผิดปกติ' : escapeHTML(currentReaction)}</span></p><p class="text-xs text-gray-500 mb-3 border-b pb-2">เวลาบันทึกล่าสุด: ${tf.StartTime ? new Date(tf.StartTime).toLocaleString('th-TH') : '-'}</p>` : '';
+return `<div class="mt-3 p-3 border rounded ${tf ? 'bg-gray-50' : 'bg-yellow-50 border-yellow-200'}"><p class="font-bold ${tf ? 'text-gray-800' : 'text-yellow-800'} mb-2 border-b pb-1"><i class="fa-solid fa-notes-medical mr-1"></i> ${tf ? 'แก้ไขผลปฏิกิริยาการให้เลือด' : 'บันทึกผลปฏิกิริยาการให้เลือด'} (Transfusion Reaction)</p>${currentLine}<div class="space-y-3"><div class="flex flex-col gap-2"><select id="inline-tf-reaction-${d.DispenseID}" onchange="toggleInlineReactionOther('${d.DispenseID}')" class="flex-1 border rounded p-1.5 text-sm bg-white font-medium text-gray-700 focus:ring-2 focus:ring-yellow-400 outline-none">${getReactionOptionsHTML(selected)}</select><div id="inline-tf-reaction-other-group-${d.DispenseID}" class="${selected === 'Other' ? '' : 'hidden'}"><input type="text" id="inline-tf-reaction-other-${d.DispenseID}" value="${escapeHTML(otherValue)}" placeholder="ระบุปฏิกิริยาอื่น ๆ" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-yellow-400 outline-none" /></div></div><button type="button" onclick="saveInlineReaction('${d.HN}', '${d.UnitID}', '${d.DispenseID}')" class="bg-yellow-600 text-white px-3 py-1.5 rounded text-sm hover:bg-yellow-700 shadow-sm font-medium whitespace-nowrap"><i class="fa-solid fa-save mr-1"></i> บันทึกผล</button></div></div>`;
+}
+
 function submitTransfusion(e) {
 e.preventDefault(); const hn = document.getElementById('flow-hn').value; const unit = document.getElementById('flow-unit').value; if(!hn || !unit) return showToast("กรุณาระบุ HN และ Unit ID ด้านบนก่อน", "warning");
-const reaction = document.getElementById('tf-reaction').value; const data = ["TF" + Date.now(), hn, unit, new Date().toISOString(), new Date().toISOString(), reaction, "Completed"]; const blood = db.BloodInventory.find(b => b.UnitID == unit); if(blood) blood.Status = 'Used';
-if(!db.Transfusion) db.Transfusion = []; db.Transfusion.push({TransfusionID: data[0], HN: data[1], UnitID: data[2], StartTime: data[3], EndTime: data[4], Reaction: data[5], Status: data[6]});
-if(reaction !== 'None') { showToast("พบปฏิกิริยาการให้เลือด! แจ้งเตือนระบบแล้ว", "danger"); if(!db.Alerts) db.Alerts = []; db.Alerts.push({AlertID: "ALR"+Date.now(), Type: "Danger: Transfusion Reaction", Message: reaction, HN: hn, DateTime: new Date().toISOString(), Status: "Active"}); } else { showToast("บันทึกประวัติให้เลือดสำเร็จ", "success"); }
-saveDB(); document.getElementById('tf-reaction').value = 'None'; refreshActiveViews();
+const reactionType = document.getElementById('tf-reaction').value;
+const otherDetail = document.getElementById('tf-reaction-other').value.trim();
+if(reactionType === 'Other' && !otherDetail) return showToast("กรุณาระบุรายละเอียดปฏิกิริยาอื่น ๆ", "warning");
+const reaction = reactionType === 'Other' && otherDetail ? `Other: ${otherDetail}` : reactionType;
+upsertTransfusionReaction(hn, unit, reaction);
+if(addReactionAlertIfNeeded(hn, reaction)) { showToast("พบปฏิกิริยาการให้เลือด! แจ้งเตือนระบบแล้ว", "danger"); } else { showToast("บันทึกประวัติให้เลือดสำเร็จ", "success"); }
+saveDB(); document.getElementById('tf-reaction').value = 'None'; document.getElementById('tf-reaction-other').value = ''; toggleReactionOtherInput(); refreshActiveViews();
 }
 
 function printTransfusionSummary() { const hn = document.getElementById('flow-hn').value; const unit = document.getElementById('flow-unit').value; printDispenseDoc(hn, unit); }
 
 function printDispenseDoc(hn, unit) {
 if(!hn || !unit) return showToast("กรุณาระบุ HN และ Unit ID ก่อนพิมพ์", "warning");
-const pt = (db.Patients || []).find(x => x.HN == hn) || [...(db.BloodRequests || [])].reverse().find(x => x.HN == hn) || {}; const bs = [...(db.BedsideTest || [])].reverse().find(x => x.HN == hn && x.UnitID == unit) || {}; const dp = [...(db.BloodDispense || [])].reverse().find(x => x.HN == hn && x.UnitID == unit) || {}; const tf = [...(db.Transfusion || [])].reverse().find(x => x.HN == hn && x.UnitID == unit) || {}; const blood = (db.BloodInventory || []).find(x => x.UnitID == unit) || {};
+const pt = (db.Patients || []).find(x => x.HN == hn) || [...(db.BloodRequests || [])].reverse().find(x => x.HN == hn) || {}; const bs = [...(db.BedsideTest || [])].reverse().find(x => x.HN == hn && x.UnitID == unit) || {}; const dp = [...(db.BloodDispense || [])].reverse().find(x => x.HN == hn && x.UnitID == unit) || {}; const tf = getLatestTransfusion(hn, unit) || {}; const blood = (db.BloodInventory || []).find(x => x.UnitID == unit) || {};
 if (!dp.DispenseID) return showToast("ไม่พบประวัติการจ่ายเลือดถุงนี้ในระบบ", "danger");
 let pDate = new Date().toLocaleString('th-TH');
 const html = `<div class="p-10 max-w-4xl mx-auto text-black bg-white"><div class="text-center mb-8 border-b-2 border-black pb-4"><h1 class="text-3xl font-bold mb-2">ใบสรุปการให้เลือด (Transfusion Summary)</h1><h2 class="text-xl">โรงพยาบาลจตุรพักตรพิมาน (Chaturaphak Phiman Hospital)</h2><p class="text-sm text-gray-600 mt-2">พิมพ์ระบบเมื่อ: ${pDate}</p></div><div class="mb-6"><h3 class="font-bold text-lg bg-gray-200 p-2 mb-3">1. ข้อมูลผู้ป่วย (Patient Information)</h3><div class="grid grid-cols-2 gap-4 px-4 text-base"><p><strong>HN:</strong> ${hn}</p><p><strong>ชื่อ-สกุล:</strong> ${pt.Name || 'ไม่ระบุ'}</p><p><strong>อายุ/เพศ:</strong> ${pt.Age || '-'} ปี / ${pt.Gender || '-'}</p><p><strong>หอผู้ป่วย:</strong> ${dp.Ward || pt.Ward || '-'}</p><p class="col-span-2"><strong>หมู่เลือดผู้ป่วย (ที่บันทึกไว้ในประวัติ):</strong> ${pt.BloodGroup_ABO || '-'} ${pt.Rh || '-'}</p></div></div><div class="mb-6"><h3 class="font-bold text-lg bg-gray-200 p-2 mb-3">2. ข้อมูลการจ่ายเลือด (Dispense Information)</h3><div class="grid grid-cols-2 gap-4 px-4 text-base"><p><strong>หมายเลขถุง (Unit ID):</strong> ${unit}</p><p><strong>หมู่เลือดของถุง:</strong> ${blood.BloodGroup || '-'} ${blood.Rh || '-'}</p><p><strong>ผู้รับเลือด (จากวอร์ด):</strong> ${dp.PickupName || '-'}</p><p><strong>ผู้จ่ายเลือด (คลังเลือด):</strong> ${dp.DispensedBy || '-'}</p><p class="col-span-2"><strong>เวลาที่บันทึกจ่าย:</strong> ${dp.DateTime ? new Date(dp.DateTime).toLocaleString('th-TH') : '-'}</p></div></div><div class="mb-6"><h3 class="font-bold text-lg bg-gray-200 p-2 mb-3">3. ผลการตรวจสอบก่อนให้เลือด (Bedside Test)</h3><div class="grid grid-cols-2 gap-4 px-4 text-base"><p><strong>หยด Anti-A:</strong> ${bs.AntiA || '-'}</p><p><strong>หยด Anti-B:</strong> ${bs.AntiB || '-'}</p><p><strong>หยด Anti-D (Rh):</strong> ${bs.AntiD || '-'}</p><p><strong>สรุปหมู่เลือดที่ตรวจได้:</strong> ${bs.Summary || '-'}</p><p><strong>ผู้ทำการตรวจ (MT):</strong> ${bs.Staff || '-'}</p><p><strong>เวลาที่ตรวจ:</strong> ${bs.DateTime ? new Date(bs.DateTime).toLocaleString('th-TH') : '-'}</p></div></div><div class="mb-8"><h3 class="font-bold text-lg bg-gray-200 p-2 mb-3">4. ปฏิกิริยาการให้เลือด (Transfusion Reaction)</h3><div class="px-4 text-base"><p class="mb-2"><strong>อาการผิดปกติ (Reaction):</strong> <span class="border px-3 py-1 bg-white ${tf.Reaction && tf.Reaction !== 'None' ? 'font-bold text-red-600' : 'font-bold text-green-600'}">${tf.Reaction || 'ไม่ได้บันทึกปฏิกิริยา'}</span></p><p><strong>เวลาที่บันทึกข้อมูล:</strong> ${tf.StartTime ? new Date(tf.StartTime).toLocaleString('th-TH') : '-'}</p></div></div><div class="mt-16 flex justify-around text-center text-base pt-10"><div><p>...........................................................</p><p class="mt-2 font-bold">( ${dp.DispensedBy || '.....................................'} )</p><p class="mt-1">เจ้าหน้าที่คลังเลือดผู้จ่าย</p></div><div><p>...........................................................</p><p class="mt-2 font-bold">( ........................................................... )</p><p class="mt-1">พยาบาลผู้ให้เลือด</p></div></div></div>`; showPrintPreview(html);
@@ -1165,7 +1773,7 @@ let filteredDispense = [...db.BloodDispense].reverse();
 if(searchTerm && searchTerm.trim() !== "") { const term = String(searchTerm).toLowerCase(); filteredDispense = filteredDispense.filter(d => { let p = db.Patients ? db.Patients.find(x => x.HN == d.HN) : null; let req = db.BloodRequests ? [...db.BloodRequests].reverse().find(x => x.HN == d.HN) : null; let pName = p ? p.Name : (req ? req.Name : ''); return ((d.HN && String(d.HN).toLowerCase().includes(term)) || (d.UnitID && String(d.UnitID).toLowerCase().includes(term)) || (pName && String(pName).toLowerCase().includes(term)) || (d.Ward && String(d.Ward).toLowerCase().includes(term))); }); }
 if(filteredDispense.length === 0) { tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-gray-500">ไม่พบข้อมูลที่ค้นหา</td></tr>'; return; }
 tbody.innerHTML = filteredDispense.map(d => {
-let p = db.Patients ? db.Patients.find(x => x.HN == d.HN) : null; let req = db.BloodRequests ? [...db.BloodRequests].reverse().find(x => x.HN == d.HN) : null; let pName = p ? p.Name : (req ? req.Name : 'ไม่ทราบชื่อ'); let blood = db.BloodInventory ? db.BloodInventory.find(x => x.UnitID == d.UnitID) : null; let bProduct = blood ? (blood.Product || '-') : '-'; let tf = db.Transfusion ? db.Transfusion.find(t => t.HN == d.HN && t.UnitID == d.UnitID) : null;
+let p = db.Patients ? db.Patients.find(x => x.HN == d.HN) : null; let req = db.BloodRequests ? [...db.BloodRequests].reverse().find(x => x.HN == d.HN) : null; let pName = p ? p.Name : (req ? req.Name : 'ไม่ทราบชื่อ'); let blood = db.BloodInventory ? db.BloodInventory.find(x => x.UnitID == d.UnitID) : null; let bProduct = blood ? (blood.Product || '-') : '-'; let tf = getLatestTransfusion(d.HN, d.UnitID);
 let statusBadge = `<span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 border border-blue-200">จ่ายแล้ว</span>`; if(tf) { if(tf.Reaction !== 'None') statusBadge = `<span class="px-2 py-1 rounded text-xs bg-red-100 text-red-800 font-bold border border-red-300">พบปฏิกิริยาแพ้</span>`; else statusBadge = `<span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800 border border-green-200">ให้เลือดสำเร็จ</span>`; }
 let dDate = new Date(d.DateTime).toLocaleDateString('th-TH', { year: '2-digit', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 return `<tr class="cursor-pointer hover:bg-indigo-50 transition" onclick="viewDispenseDetails('${d.DispenseID}')"><td class="p-3 text-gray-600 text-xs">${dDate}</td><td class="p-3 font-medium text-red-700">${d.HN}</td><td class="p-3">${pName}</td><td class="p-3 text-gray-600">${d.Ward || '-'}</td><td class="p-3 font-bold">${d.UnitID}</td><td class="p-3 font-medium text-rose-600">${bProduct}</td><td class="p-3 text-gray-500">${d.DispensedBy}</td><td class="p-3 text-center">${statusBadge}</td></tr>`;
@@ -1175,17 +1783,30 @@ return `<tr class="cursor-pointer hover:bg-indigo-50 transition" onclick="viewDi
 function viewDispenseDetails(dispenseID) {
 const d = db.BloodDispense.find(x => x.DispenseID === dispenseID); if(!d) return;
 let p = db.Patients ? db.Patients.find(x => x.HN == d.HN) : null; let req = db.BloodRequests ? [...db.BloodRequests].reverse().find(x => x.HN == d.HN) : null; let pName = p ? p.Name : (req ? req.Name : 'ไม่ทราบชื่อ'); let pAge = p ? p.Age : (req ? req.Age : '-'); let pGrp = p ? `${p.BloodGroup_ABO || ''} ${p.Rh || ''}`.trim() : (req ? req.BloodGroup : '-');
-let bs = db.BedsideTest ? db.BedsideTest.find(x => x.HN == d.HN && x.UnitID == d.UnitID) : null; let tf = db.Transfusion ? db.Transfusion.find(x => x.HN == d.HN && x.UnitID == d.UnitID) : null; let blood = db.BloodInventory ? db.BloodInventory.find(x => x.UnitID == d.UnitID) : null; let bGrp = blood ? `${blood.BloodGroup} ${blood.Rh}` : '-'; let dDate = new Date(d.DateTime).toLocaleString('th-TH');
+let bs = db.BedsideTest ? db.BedsideTest.find(x => x.HN == d.HN && x.UnitID == d.UnitID) : null; let tf = getLatestTransfusion(d.HN, d.UnitID); let blood = db.BloodInventory ? db.BloodInventory.find(x => x.UnitID == d.UnitID) : null; let bGrp = blood ? `${blood.BloodGroup} ${blood.Rh}` : '-'; let dDate = new Date(d.DateTime).toLocaleString('th-TH');
 let html = `<div class="grid grid-cols-2 gap-4"><div class="bg-gray-50 p-3 rounded border"><p class="text-xs text-gray-500 mb-1">ข้อมูลผู้ป่วย</p><p class="font-bold text-base text-red-700">HN: ${d.HN}</p><p class="font-medium">${pName} (อายุ ${pAge} ปี)</p><p class="text-gray-600 mt-1">หอผู้ป่วย: ${d.Ward || '-'}</p><p class="text-gray-600 mt-1">หมู่เลือด: <span class="font-bold text-red-600">${pGrp || '-'}</span></p></div><div class="bg-indigo-50 p-3 rounded border border-indigo-100"><p class="text-xs text-indigo-500 mb-1">ข้อมูลถุงเลือดและการจ่าย</p><p class="font-bold text-base">Unit ID: ${d.UnitID}</p><p class="font-medium mt-1">หมู่เลือดถุง: <span class="text-indigo-700">${bGrp}</span></p><p class="text-gray-600 mt-2">เวลาจ่าย: ${dDate}</p><p class="text-gray-600 mt-1">ผู้จ่าย (ธนาคารเลือด): ${d.DispensedBy || '-'}</p><p class="text-gray-600 mt-1">ผู้รับ (วอร์ด): ${d.PickupName || '-'}</p></div></div>`;
 if(bs) { html += `<div class="mt-3 p-3 border rounded"><p class="font-bold text-gray-800 mb-2 border-b pb-1">ผล Bedside Test</p><div class="grid grid-cols-2 gap-2 text-gray-700"><p><span class="text-gray-500">Anti-A:</span> ${bs.AntiA}</p><p><span class="text-gray-500">Anti-B:</span> ${bs.AntiB}</p><p><span class="text-gray-500">Anti-D (Rh):</span> ${bs.AntiD}</p><p><span class="text-gray-500">สรุปหมู่เลือด:</span> <span class="font-bold text-indigo-700">${bs.Summary}</span></p></div><p class="text-xs text-gray-500 mt-3 pt-2 border-t">ผู้ตรวจสอบ (MT): ${bs.Staff}</p></div>`; }
-if(tf) { let rClass = tf.Reaction === 'None' ? 'text-green-600 font-bold' : 'text-red-600 font-bold'; html += `<div class="mt-3 p-3 border rounded bg-gray-50"><p class="font-bold text-gray-800 mb-2 border-b pb-1">ผลการให้เลือด (Transfusion Reaction)</p><p class="text-gray-700">อาการผิดปกติ: <span class="${rClass}">${tf.Reaction === 'None' ? 'ไม่มีอาการผิดปกติ' : tf.Reaction}</span></p><p class="text-xs text-gray-500 mt-2 pt-2 border-t">เวลาบันทึกจากวอร์ด: ${new Date(tf.StartTime).toLocaleString('th-TH')}</p></div>`; } else { html += `<div class="mt-3 p-3 border rounded bg-yellow-50 border-yellow-200"><p class="font-bold text-yellow-800 mb-2 border-b border-yellow-200 pb-1"><i class="fa-solid fa-notes-medical mr-1"></i> บันทึกผลปฏิกิริยาการให้เลือด (Transfusion Reaction)</p><div class="flex items-center gap-2"><select id="inline-tf-reaction-${d.DispenseID}" class="flex-1 border rounded p-1.5 text-sm bg-white font-medium text-gray-700 focus:ring-2 focus:ring-yellow-400 outline-none"><option value="None" class="text-green-600">✅ ไม่มีอาการผิดปกติ</option><option value="Fever/Chills">⚠️ ไข้ /หนาวสั่น</option><option value="Allergic">⚠️ ผื่นแพ้ (Allergic)</option><option value="Hemolytic">🚨 Hemolytic Reaction (อันตราย!)</option></select><button onclick="saveInlineReaction('${d.HN}', '${d.UnitID}', '${d.DispenseID}')" class="bg-yellow-600 text-white px-3 py-1.5 rounded text-sm hover:bg-yellow-700 shadow-sm font-medium whitespace-nowrap"><i class="fa-solid fa-save mr-1"></i> บันทึกผล</button></div></div>`; }
+html += getReactionEditorHTML(d, tf);
 document.getElementById('dispense-details-content').innerHTML = html; const btnPrint = document.getElementById('btn-print-dispense'); btnPrint.onclick = () => { printDispenseDoc(d.HN, d.UnitID); }; const btnEdit = document.getElementById('btn-edit-dispense'); if(btnEdit) { btnEdit.onclick = () => { openEditDispense(dispenseID); }; } document.getElementById('modal-dispense-details').classList.remove('hidden');
 }
 
+function toggleInlineReactionOther(dispenseId) {
+const selectEl = document.getElementById(`inline-tf-reaction-${dispenseId}`);
+const group = document.getElementById(`inline-tf-reaction-other-group-${dispenseId}`);
+const input = document.getElementById(`inline-tf-reaction-other-${dispenseId}`);
+if(!selectEl || !group || !input) return;
+const show = selectEl.value === 'Other';
+group.classList.toggle('hidden', !show);
+if(!show) input.value = '';
+}
+
 function saveInlineReaction(hn, unit, dispenseId) {
-const selectEl = document.getElementById(`inline-tf-reaction-${dispenseId}`); if(!selectEl) return; const reaction = selectEl.value; const data = ["TF" + Date.now(), hn, unit, new Date().toISOString(), new Date().toISOString(), reaction, "Completed"]; const blood = db.BloodInventory.find(b => b.UnitID == unit); if(blood) blood.Status = 'Used';
-if(!db.Transfusion) db.Transfusion = []; db.Transfusion.push({TransfusionID: data[0], HN: data[1], UnitID: data[2], StartTime: data[3], EndTime: data[4], Reaction: data[5], Status: data[6]});
-if(reaction !== 'None') { showToast("พบปฏิกิริยาการให้เลือด! แจ้งเตือนระบบแล้ว", "danger"); if(!db.Alerts) db.Alerts = []; db.Alerts.push({AlertID: "ALR"+Date.now(), Type: "Danger: Transfusion Reaction", Message: reaction, HN: hn, DateTime: new Date().toISOString(), Status: "Active"}); } else { showToast("บันทึกประวัติให้เลือดสำเร็จ", "success"); } saveDB(); refreshActiveViews(); viewDispenseDetails(dispenseId); 
+const selectEl = document.getElementById(`inline-tf-reaction-${dispenseId}`); if(!selectEl) return; const reactionType = selectEl.value; const otherInput = document.getElementById(`inline-tf-reaction-other-${dispenseId}`); const otherDetail = otherInput ? otherInput.value.trim() : '';
+if(reactionType === 'Other' && !otherDetail) return showToast("กรุณาระบุรายละเอียดปฏิกิริยาอื่น ๆ", "warning");
+const reaction = reactionType === 'Other' && otherDetail ? `Other: ${otherDetail}` : reactionType;
+upsertTransfusionReaction(hn, unit, reaction);
+if(addReactionAlertIfNeeded(hn, reaction)) { showToast("พบปฏิกิริยาการให้เลือด! แจ้งเตือนระบบแล้ว", "danger"); } else { showToast("บันทึกประวัติให้เลือดสำเร็จ", "success"); }
+saveDB(); refreshActiveViews(); viewDispenseDetails(dispenseId); 
 }
 
 function openEditDispense(dispenseID) {
